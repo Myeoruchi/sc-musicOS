@@ -9,8 +9,8 @@ function mouseInit() { EUDRegisterObjectToNamespace("click", click); }
 
 function opening(superUser) {
     const s = StringBuffer(2048);
+    static var txtUpdate = true;
     var flag;
-    var txtUpdate;
     if (!flag) { timer++; }
 
     once (timer == 12*3) {
