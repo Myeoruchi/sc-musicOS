@@ -1,23 +1,27 @@
 import functions as fc;
 import musicPlay as mp;
+import musicInfo as info;
 
-const color = [0, 1, 0, 0];
+const feature = [0, 1, 0, 0]; // 0 is on, 1 is off
+const genre = EUDArray(info.genreNum);
 var click;
 var timer;
+var status;
 
+function mouseClick();
 function mouseInit() { EUDRegisterObjectToNamespace("click", click); }
 
 function opening(superUser) {
     const s = StringBuffer(2048);
-    var flag;
+    static var musicNumTemp, musicNumReal = info.musicNumMax, info.musicNumMax;
     var txtUpdate;
-    if (!flag) { timer++; }
+    if (!status) { timer++; }
 
     once (timer == 12*3) {
         PlayWAV("staredit\\wav\\g_8.ogg");
         s.insert(0);
         s.appendf("\x13\x19┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓\n\n\n");
-        s.appendf("\x13\x11종합 장르 맞히기 Piano ver2\n");
+        s.appendf("\x13\x11노래 맞히기 오픈소스\n");
         s.appendf("\x13\x04제작 : Myeoruchi (Heaven)\n");
         s.appendf("\x13\x04갈대님의 오픈소스를 참고하여 만들었습니다.\n\n\n");
         s.appendf("\x13\x19┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛");
@@ -41,13 +45,14 @@ function opening(superUser) {
         s.appendf("\x13\x19┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛");
     }
     if (timer == 12*78) {
-        once { flag = true; }
+        once { status = 1; txtUpdate = true; }
         CenterView("Anywhere");
         const clicked = fc.getDeath(superUser, "Terran Marine");
         if (clicked) {
-            if (clicked == 5) { PlayWAV("staredit\\wav\\Clear.wav"); flag = false; click = 0; return false; }
+            if (clicked == 100) { PlayWAV("staredit\\wav\\Clear.wav"); click = 0; timer++; return false; }
             PlayWAV("staredit\\wav\\0115.WAV");
-            txtUpdate = true; color[clicked-1] = !color[clicked-1];
+            feature[clicked-1] = !feature[clicked-1];
+            txtUpdate = true;
         }
         if (txtUpdate) {
             txtUpdate = false;
@@ -56,17 +61,62 @@ function opening(superUser) {
             s.appendf("\x13{0:c}{0:n}\x04님이 설정합니다.\n", superUser);
             s.appendf("\x13\x19설정\x04은 \x1E마우스 클릭\x04으로 진행할 수 있습니다.\n");
             s.appendf("\x13\x07초록색\x04은 활성화이며, \x08붉은색\x04은 비활성화입니다.\n\n");
-            s.appendf("\x13{:t}정답공개　　　{:t}채팅분리\n", color[0] ? EPD(Db("\x08")) : EPD(Db("\x07")), color[1] ? EPD(Db("\x08")) : EPD(Db("\x07")));
-            s.appendf("\x13{:t}장르힌트　　　{:t}초성힌트\n", color[2] ? EPD(Db("\x08")) : EPD(Db("\x07")), color[3] ? EPD(Db("\x08")) : EPD(Db("\x07")));
+            s.appendf("\x13{:t}정답공개　　　{:t}채팅분리\n", feature[0] ? EPD(Db("\x08")) : EPD(Db("\x07")), feature[1] ? EPD(Db("\x08")) : EPD(Db("\x07")));
+            s.appendf("\x13{:t}일반힌트　　　{:t}초성힌트\n", feature[2] ? EPD(Db("\x08")) : EPD(Db("\x07")), feature[3] ? EPD(Db("\x08")) : EPD(Db("\x07")));
             s.appendf("\x13\x1D설정완료\n");
             s.appendf("\x13\x19┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛");
         }
     }
-    once (timer == 12*78+1) {
-        mp.ansOpen = !color[0];
-        mp.chatSeparate = !color[1];
-        mp.hint1 = !color[2];
-        mp.hint2 = !color[3];
+    else if (timer == 12*78+1) {
+        once { status = 2; txtUpdate = true; }
+        CenterView("Anywhere");
+        const clicked = fc.getDeath(superUser, "Terran Marine");
+        var index;
+        if (clicked) {
+            switch (clicked) {
+                case 1: index = index ? index-1 : info.genreNum-1; break;
+                case 2: index = index == info.genreNum-1 ? 0 : index+1; break;
+                case 3:
+                    genre[index] = !genre[index];
+                    if (genre[index]) {
+                        musicNumTemp -= info.genreInclude[index];
+                        if (musicNumTemp < musicNumReal) { musicNumReal = musicNumTemp; }
+                    }
+                    else { musicNumTemp += info.genreInclude[index]; }
+                    break;
+                case 4: if (musicNumReal) { musicNumReal--; } break;
+                case 5: musicNumReal = musicNumReal > 5 ? musicNumReal-5 : 0; break;
+                case 6: musicNumReal = musicNumReal > 10 ? musicNumReal-5 : 0; break;
+                case 7: if (musicNumTemp - musicNumReal) { musicNumReal++; } break;
+                case 8: musicNumReal = musicNumTemp - musicNumReal > 5 ? musicNumReal+5 : musicNumTemp; break;
+                case 9: musicNumReal = musicNumTemp - musicNumReal > 10 ? musicNumReal+10 : musicNumTemp; break;
+                case 100: PlayWAV("staredit\\wav\\Clear.wav"); status = 0; click = 0; return false;
+            }
+            PlayWAV("staredit\\wav\\0115.WAV");
+            txtUpdate = true;
+        }
+        if (txtUpdate) {
+            txtUpdate = false;
+            s.insert(0);
+            s.appendf("\x13\x19┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓\n");
+            s.appendf("\x13{0:c}{0:n}\x04님이 설정합니다.\n", superUser);
+            s.appendf("\x13\x04전체 \x19{}\x04곡 중에 \x19{}\x04곡을 포함시켰고, \x19{}\x04곡 재생됩니다.\n", info.musicNumMax, musicNumTemp, musicNumReal);
+            s.appendf("\x13\x08－１０　－５　－１　　\x04곡 수 조절　　\x07＋１　＋５　＋１０\n");
+            s.appendf("\x13\x19▲\n");
+            s.appendf("\x13{:t}{:t}\n", genre[index] ? EPD(Db("\x08")) : EPD(Db("\x07")), info.genreName[index]);
+            s.appendf("\x13\x19▼\n");
+            s.appendf("\x13\x1D설정완료\n");
+            s.appendf("\x13\x19┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛");
+        }
+    }
+    once (timer == 12*78+2) {
+        foreach (i : py_range(info.genreNum)) { info.genreActive[i] = !genre[i]; }
+        mp.musicNum = musicNumReal;
+        mp.ansOpen = !feature[0];
+        mp.chatSeparate = !feature[1];
+        mp.hint1 = !feature[2];
+        mp.hint2 = !feature[3];
+        mp.orderInit();
         s.insert(0);
         s.appendf("\x13\x19┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓\n\n\n");
         s.appendf("\x13\x1F설정\x04이 전부 끝났습니다. 잠시 후, 게임이 시작됩니다.\n");
@@ -80,48 +130,65 @@ function opening(superUser) {
 }
 
 function help(pos) {
-    const text = [EPD(Db("정답을 못 맞혔을 때 정답을 공개합니다.")), EPD(Db("정답을 맞힌 사람은 못 맞힌 사람과 채팅할 수 없습니다.")), EPD(Db("40초에 장르 힌트가 공개됩니다.")), EPD(Db("15초에 초성 힌트가 공개됩니다."))];
-    if (timer == 12*66) {
+    if (status != 1) { return; }
+    const text = [EPD(Db("정답을 못 맞혔을 때 정답을 공개합니다.")), EPD(Db("정답을 맞힌 사람은 못 맞힌 사람과 채팅할 수 없습니다.")), EPD(Db("일반 힌트가 공개됩니다.")), EPD(Db("초성 힌트가 공개됩니다."))];
+    var prev;
+    if (prev != pos) {
         const s = StringBuffer(1024);
         s.insert(0);
         if (pos) { s.appendf("\x1D( \x04활성화 할 경우 {:t} \x1D)", text[pos-1]); }
         else { s.appendf(" "); }
         eprintf("{:t}", s.epd);
     }
+    prev = pos;
 }
 
 function mouseCheck(superUser) {
-    if (timer != 12*78) { return 0; }
-    const mouseX = (dwread_epd(EPD(0x62848C)) + dwread_epd(EPD(0x6CDDC4)));
-    const mouseY = (dwread_epd(EPD(0x6284A8)) + dwread_epd(EPD(0x6CDDC8)));
+    if (!status) { return 0; }
+    const mouseX = dwread_epd(EPD(0x62848C)) + dwread_epd(EPD(0x6CDDC4));
+    const mouseY = dwread_epd(EPD(0x6284A8)) + dwread_epd(EPD(0x6CDDC8));
     var pos = 0;
-    if (4036 <= mouseX && mouseX <= 4082) {
-        if (4096 <= mouseY && mouseY < 4111) { pos = 1; }
-        else if (4111 <= mouseY && mouseY < 4126) { pos = 3; }
-    }
-    else if (4111 <= mouseX && mouseX <= 4157) {
-        if (4096 <= mouseY && mouseY < 4111) { pos = 2; }
-        else if (4111 <= mouseY && mouseY < 4126) { pos = 4; }
-    }
 
-    if (getuserplayerid() == superUser) {
-        var press;
-        if (dwread_epd(EPD(0x6CDDC0))) {
-            if (press) { click = 0; return pos; }
-            press = true;
-            const mouseX = (dwread_epd(EPD(0x62848C)) + dwread_epd(EPD(0x6CDDC4)));
-            const mouseY = (dwread_epd(EPD(0x6284A8)) + dwread_epd(EPD(0x6CDDC8)));
-            if (4036 <= mouseX && mouseX <= 4082) {
-                if (4096 <= mouseY && mouseY < 4111) { click = 1; }
-                else if (4111 <= mouseY && mouseY < 4126) { click = 3; }
-            }
-            else if (4111 <= mouseX && mouseX <= 4157) {
-                if (4096 <= mouseY && mouseY < 4111) { click = 2; }
-                else if (4111 <= mouseY && mouseY < 4126) { click = 4; }
-            }
-            else if (4072 <= mouseX && mouseX <= 4118 && 4128 <= mouseY && mouseY <= 4143) { click = 5; }
+    if (status == 1) {
+        if (4036 <= mouseX && mouseX <= 4082) {
+            if (4096 <= mouseY && mouseY < 4111) { pos = 1; }
+            else if (4111 <= mouseY && mouseY < 4126) { pos = 3; }
         }
-        else { press = false; click = 0; }
+        else if (4111 <= mouseX && mouseX <= 4157) {
+            if (4096 <= mouseY && mouseY < 4111) { pos = 2; }
+            else if (4111 <= mouseY && mouseY < 4126) { pos = 4; }
+        }
     }
+    else if (status == 2) {
+        if (4072 <= mouseX && mouseX <= 4118) {
+            if (4080 <= mouseY && mouseY < 4094) { pos = 1; }
+            else if (4112 <= mouseY && mouseY < 4126) { pos = 2; }
+            else if (4094 <= mouseY && mouseY < 4112) { pos = 3; }
+        }
+        else if (4067 <= mouseY && mouseY <= 4075) {
+            if (4031 <= mouseX && mouseX <= 4045) { pos = 4; }
+            else if (3999 <= mouseX && mouseX <= 4015) { pos = 5; }
+            else if (3956 <= mouseX && mouseX <= 3982) { pos = 6; }
+            else if (4145 <= mouseX && mouseX <= 4160) { pos = 7; }
+            else if (4178 <= mouseX && mouseX <= 4195) { pos = 8; }
+            else if (4210 <= mouseX && mouseX <= 4238) { pos = 9; }
+        }
+    }
+    if (getuserplayerid() == superUser && mouseClick(superUser)) {
+        if (4072 <= mouseX && mouseX <= 4118 && 4128 <= mouseY && mouseY <= 4143) { click = 100; }
+        else { click = pos; }
+    }
+    else { click = 0; }
     return pos;
+}
+
+function mouseClick(superUser) {
+    var press;
+    if (dwread_epd(EPD(0x6CDDC0))) {
+        if (press) { return false; }
+        press = true;
+        return true;
+    }
+    else { press = false; }
+    return false;
 }

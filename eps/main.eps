@@ -15,11 +15,10 @@ function onPluginStart() {
     randomize();
     op.mouseInit();
     cf.variableInit();
-    mp.orderInit();
     BGM.loadSound();
     SetMemoryEPD(EPD(0x5124F0), SetTo, 29);	// x2배속
     setcurpl(cp);
-    BGM.SetBGM(info.musicNum);
+    BGM.SetBGM(info.musicNumMax);
 }
 
 function beforeTriggerExec() {
@@ -39,7 +38,7 @@ function afterTriggerExec() {
     switch (status) {
         case 0:
             BGM.Play();
-            if (op.opening(superUser)) { status = 1; BGM.SetBGM(mp.orderArr[mp.curMusic]); }
+            if (op.opening(superUser)) { status = 3; }
             break;
         case 1:
             BGM.Play();
@@ -65,7 +64,7 @@ function afterTriggerExec() {
                 s.appendf("\x13\x04플레이 해주셔서 감사합니다.\n");
                 s.appendf("\x13\x04제작자 : Myeoruchi (Heaven)\n\n\n");
                 s.appendf("\x13\x19┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛");
-                BGM.SetBGM(info.musicNum+1);
+                BGM.SetBGM(info.musicNumMax+1);
             }
             s.DisplayAt(0);
             BGM.Play();
