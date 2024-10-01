@@ -1,7 +1,11 @@
 # 스타크래프트 노래 맞히기 유즈맵 오픈소스
 
 Create by Myeoruchi (Heaven)
+
 Thanks to Avlos (갈대)
+
+## 주의사항
+- DO NOT USE **euddraft 0.10.0.1**
 
 ## 특징
 - 내가 친 정답이 다른 사람에게 보이지 않으므로, **모두가 정답**을 맞힐 수 있습니다.
