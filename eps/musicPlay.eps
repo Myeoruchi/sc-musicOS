@@ -16,13 +16,15 @@ var index;
 var musicTimer;
 var skipRequireNum;
 var txtUpdate;
-var score = 3;
+const scoreMax = 3;
+const scoreDiff = 1;
+var score;
 
 function orderInit() {
     if (!musicNum) { return; }
     foreach (i : py_range(info.musicNumMax)) {
-        static var index = 0;
-        if (info.genreActive[info.genreIndex[i]]) { orderArr[index] = i; index++; }
+        static var pos = 0;
+        if (info.genreActive[info.genreIndex[i]]) { orderArr[pos] = i; pos++; }
     }
     foreach (j : py_range(8)) {
         for (var i = 0; i < musicNum-1; i++) {
@@ -40,7 +42,7 @@ function musicInit() {
     foreach (cp : EUDLoopPlayer("Human")) { vote[cp] = false; correct[cp] = false; }
     skipRequireNum = bread_epd(EPD(0x57F1E1), 1)/2 + 1;
     musicTimer = 0;
-    score = 3;
+    score = scoreMax;
     curMusic++;
     index = orderArr[curMusic];
     BGM.SetBGM(index);
@@ -74,8 +76,14 @@ function musicText(p, flag) {
                     s.appendf("{:c}P{} ", cp, cp+1);
                 }
             }
-            if (hint1 && remain <= hintTime[0]) { if (remain == hintTime[0]) { score = 2; } s.appendf("\n\x13\x07일반힌트 \x04: {:t}", info.hintArr1[index]); }
-            if (hint2 && remain <= hintTime[1]) { if (remain == hintTime[1]) { score = 1; } s.appendf("\n\x13\x07초성힌트 \x04: {:t}", info.hintArr2[index]); }
+            if (hint1 && remain <= hintTime[0]) {
+                if (score > scoreMax - scoreDiff) { score = score - scoreDiff ? score - scoreDiff : 1; }
+                s.appendf("\n\x13\x07일반힌트 \x04: {:t}", info.hintArr1[index]);
+            }
+            if (hint2 && remain <= hintTime[1]) {
+                if (score > scoreMax - scoreDiff * (2 - !hint1)) { score = score - scoreDiff ? score - scoreDiff : 1; }
+                s.appendf("\n\x13\x07초성힌트 \x04: {:t}", info.hintArr2[index]);
+            }
         }
         musicTimer++;
     }
