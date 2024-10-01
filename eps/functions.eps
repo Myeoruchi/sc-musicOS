@@ -1,0 +1,67 @@
+function singleBan() {
+	const hostName = 0x6D0F78; //방장 닉네임
+	const temp = Db("");
+	const tester = Db("Myeoruchi");
+	if (strcmp(hostName, temp) == 0) {
+		setcurpl(getuserplayerid());
+        eprintln("배틀넷 혹은 UDP 환경에서 플레이 해주세요. 배틀넷이라면 방 제목을 다르게 해주세요.");
+		dwread(0);
+    }
+	/*else if (strcmp(hostName, tester) != 0) {
+		setcurpl(getuserplayerid());
+        eprintln("테스트 버전이므로 플레이가 불가능합니다.");
+		dwread(0);
+	}*/
+}
+
+function speedBan() {
+	const a = dwread_epd(EPD(0x51CE84));
+	const b = dwread_epd(EPD(0x51CE88));
+	if (a == 1000) { if (b == 1000) { return; } }		//턴레이트24
+	else if (a == 1042) { if (b == 1190) { return; } }	//턴레이트20
+	else if (a == 1302) { if (b == 1488) { return; } }	//턴레이트16
+	else if (a == 1488) { if (b == 1701) { return; } }	//턴레이트14
+	else if (a == 1736) { if (b == 1984) { return; } }	//턴레이트12
+	else if (a == 2083) { if (b == 2381) { return; } }	//턴레이트10
+	else if (a == 2604) { if (b == 2976) { return; } }	//턴레이트8
+	else {
+        setcurpl(getuserplayerid());
+        eprintln("배속 플레이는 금지하고 있습니다.");
+        dwread(0);
+    }
+}
+
+function getDeath(player:TrgPlayer, unit:TrgUnit) {
+    return dwread_epd(player + 12 * unit);
+}
+
+function strcmp2(s1, s2) {
+	const br1 = EUDByteReader();
+	const br2 = EUDByteReader();
+	br1.seekoffset(s1);
+	br2.seekoffset(s2);
+	var c1, c2;
+	while (true) {
+		while (true) { 
+			c1 = br1.readbyte();
+			if (c1 != 0x20) { break; }
+		}
+		while (true) { 
+			c2 = br2.readbyte();
+			if (c2 != 0x20) { break; }
+		}
+		if (c1 < 128 && c2 < 128) {
+			if (65 <= c1 && c1 <= 90) { c1 += 32; }
+			if (65 <= c2 && c2 <= 90) { c2 += 32; }
+		}
+		if (c1 == c2) {
+			if (c1 == 0) { return 0; }
+		}
+		else { return c1 - c2; }
+	}
+}
+
+function leaderBoard() {
+	LeaderBoardScore(Custom, "\x1E고인물");
+	LeaderBoardComputerPlayers(Disable);
+}

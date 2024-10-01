@@ -1,0 +1,74 @@
+import TriggerEditor.BGMPlayer as BGM;
+import functions as fc;
+import opening as op;
+import musicPlay as mp;
+import musicInfo as info;
+import chatFunction as cf;
+
+const cp = getuserplayerid();
+var superUser;
+var status;
+
+function onPluginStart() {
+    fc.singleBan();
+    fc.speedBan();
+    randomize();
+    op.mouseInit();
+    cf.variableInit();
+    mp.orderInit();
+    BGM.loadSound();
+    SetMemoryEPD(EPD(0x5124F0), SetTo, 29);	// x2배속
+    setcurpl(cp);
+    BGM.SetBGM(info.musicNum);
+}
+
+function beforeTriggerExec() {
+    setcurpl(cp);
+    if (!playerexist(superUser)) { foreach (cp : EUDLoopPlayer("Human")) { superUser = cp; break; } }
+    switch (status) {
+        case 0:
+            op.help(op.mouseCheck(superUser));
+            break;
+        case 1:
+            cf.readChat();
+            break;
+    }
+}
+
+function afterTriggerExec() {
+    switch (status) {
+        case 0:
+            BGM.Play();
+            if (op.opening(superUser)) { status = 1; BGM.SetBGM(mp.orderArr[mp.curMusic]); }
+            break;
+        case 1:
+            BGM.Play();
+            cf.writeChat(cp);
+            cf.chatTypeUpdate();
+            cf.allianceRefresh(cp);
+            if (mp.musicSkip(superUser, cp)) { status = 2; }
+            mp.musicText(cp, true);
+            break;
+        case 2:
+            if (mp.musicDelay()) { status = 3; }
+            mp.musicText(cp, false);
+            break;
+        case 3:
+            status = mp.musicInit();
+            break;
+        case 4:
+            const s = StringBuffer(2048);
+            once {
+                s.insert(0);
+                s.appendf("\x13\x19┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓\n\n\n");
+                s.appendf("\x13\x04엔딩곡 : ???\n");
+                s.appendf("\x13\x04플레이 해주셔서 감사합니다.\n");
+                s.appendf("\x13\x04제작자 : Myeoruchi (Heaven)\n\n\n");
+                s.appendf("\x13\x19┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛");
+                BGM.SetBGM(info.musicNum+1);
+            }
+            s.DisplayAt(0);
+            BGM.Play();
+            break;
+    }
+}

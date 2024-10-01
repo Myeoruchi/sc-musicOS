@@ -1,0 +1,128 @@
+import TriggerEditor.BGMPlayer as BGM;
+import functions as fc;
+import musicInfo as info;
+
+const orderArr = EUDArray(info.musicNum);
+const vote = PVariable();
+const correct = PVariable();
+const hintTime = [40, 15];
+var ansOpen;
+var chatSeparate;
+var hint1;
+var hint2;
+var curMusic;
+var musicTimer;
+var skipNum;
+var txtUpdate;
+var score = 3;
+
+function orderInit() {
+    foreach (i : py_range(info.musicNum)) { orderArr[i] = i; }
+    foreach (j : py_range(8)) {
+        foreach (i : py_range(info.musicNum-1)) {
+            const ranNum = dwrand() % (info.musicNum-i) + i;
+            const temp = orderArr[i];
+            orderArr[i] = orderArr[ranNum];
+            orderArr[ranNum] = temp;
+        }
+    }
+    foreach (cp : EUDLoopPlayer("Human")) { skipNum++; }
+    skipNum = skipNum/2 + 1;
+}
+
+function musicInit() {
+    musicTimer = 0;
+    skipNum = 0;
+    score = 3;
+    curMusic++;
+    BGM.SetBGM(orderArr[curMusic]);
+    if (curMusic == info.musicNum) { return 4; }
+    foreach (cp : EUDLoopPlayer("Human")) { skipNum++; vote[cp] = false; correct[cp] = false; }
+    skipNum = skipNum/2 + 1;
+    printAt(3, "\n\n\n ");
+    return 1;
+}
+
+function musicDelay() {
+    var timer;
+    timer++;
+    if (timer == 35*2) { timer = 0; return true; }
+    return false;
+}
+
+function musicText(p, flag) {
+    const s = StringBuffer(1024);
+    var ans;
+    if (flag) {
+        if (!(musicTimer % 35) || txtUpdate) {
+            txtUpdate = false;
+            ans = false;
+            const remain = info.lenArr[orderArr[curMusic]] - musicTimer/35;
+            s.insert(0);
+            s.appendf("\x13\x1E남은곡 ( {} / {} )\n", info.musicNum - curMusic, info.musicNum);
+            s.appendf("\x13\x19음악\x04을 듣고 \x11답\x04을 입력하세요.\n");
+            s.appendf("\x13\x1F- \x1D{}초 \x1F-\n", remain);
+            var first = true;
+            foreach (cp : EUDLoopPlayer("Human")) {
+                if (correct[cp]) {
+                    if (first) { first = false; s.appendf("\x13 \x04정답자 : "); }
+                    s.appendf("{:c}P{} ", cp, cp+1);
+                }
+            }
+            if (hint1 && remain <= hintTime[0]) { if (remain == hintTime[0]) { score = 2; } s.appendf("\n\x13\x07장르힌트 \x04: {:t}", EPD(info.hintArr1[orderArr[curMusic]])); }
+            if (hint2 && remain <= hintTime[1]) { if (remain == hintTime[1]) { score = 1; } s.appendf("\n\x13\x07초성힌트 \x04: {:t}", EPD(info.hintArr2[orderArr[curMusic]])); }
+        }
+        musicTimer++;
+    }
+    if (!ans && ((ansOpen && !flag) || correct[p])) {
+        ans = true;
+        s.appendf("\n\x13\x1F정답 \x04: {:t}", EPD(info.artArr[orderArr[curMusic]]));
+    }
+    s.DisplayAt(0);
+}
+
+function musicSkip(superUser, p) {
+    const s = StringBuffer(1024);
+    var flag = false;
+    var skip = 0;
+    var notCorrect = 0;
+    var count = 0;
+    s.insert(0);
+    s.appendf("\x1D( \x19\"K\"\x04키를 누르면, 곡을 넘깁니다. ");
+    foreach (cp : EUDLoopPlayer("Human")) {
+        if (cp == superUser && fc.getDeath(cp, "Protoss Zealot")) {
+            skip = 2;
+            break;
+        }
+        if (!vote[cp] && fc.getDeath(cp, "Protoss Probe")) { 
+            vote[cp] = true;
+            if (p == cp) { simpleprint("\x08！\x04스킵에 투표하셨습니다."); PlayWAV("staredit\\wav\\0115.WAV"); }
+        }
+        if (!correct[cp]) {
+            notCorrect++;
+            if (vote[cp]) {
+                if (!flag) { flag = true; s.appendf("\x1E투표인원 : "); }
+                s.appendf("{:c}P{} ", cp, cp+1);
+                count++;
+            }
+        }
+    }
+    if (!notCorrect) {
+        notCorrect = skipNum;
+        foreach (cp : EUDLoopPlayer("Human")) {
+            if (vote[cp]) {
+                if (!flag) { flag = true; s.appendf("\x1E투표인원 : "); }
+                s.appendf("{:c}P{} ", cp, cp+1);
+                count++;
+            }
+        }
+    }
+    if (count) { s.appendf("\x1E{}/{} ", count, notCorrect); }
+    if (!skip && count >= notCorrect) { skip = 1; }
+    if (skip == 1) { simpleprint("\x1F■ \x04스킵투표로 현재 곡을 스킵합니다."); PlayWAV("staredit\\wav\\Clear.wav"); }
+    else if (skip == 2) { println("\x1F■ {0:c}{0:n}\x04님이 강제로 현재 곡을 스킵했습니다.", superUser); PlayWAV("staredit\\wav\\Clear.wav"); }
+    else if (info.lenArr[orderArr[curMusic]] == musicTimer/35) { skip = 1; }
+    s.appendf("\x1D)");
+    eprintf("{:t}", s.epd);
+    return skip;
+}
