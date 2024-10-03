@@ -132,15 +132,11 @@ function opening(superUser) {
 function help(pos) {
     if (status != 1) { return; }
     const text = [EPD(Db("정답을 못 맞혔을 때 정답을 공개합니다.")), EPD(Db("정답을 맞힌 사람은 못 맞힌 사람과 채팅할 수 없습니다.")), EPD(Db("일반 힌트가 공개됩니다.")), EPD(Db("초성 힌트가 공개됩니다."))];
-    var prev;
-    if (prev != pos) {
-        const s = StringBuffer(1024);
-        s.insert(0);
-        if (pos) { s.appendf("\x1D( \x04활성화 할 경우 {:t} \x1D)", text[pos-1]); }
-        else { s.appendf(" "); }
-        eprintf("{:t}", s.epd);
-    }
-    prev = pos;
+    const s = StringBuffer(1024);
+    s.insert(0);
+    if (pos) { s.appendf("\x1D( \x04활성화 할 경우 {:t} \x1D)", text[pos-1]); }
+    else { s.appendf(" "); }
+    eprintf("{:t}", s.epd);
 }
 
 function mouseCheck(superUser) {
