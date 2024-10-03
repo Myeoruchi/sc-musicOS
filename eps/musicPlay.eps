@@ -22,8 +22,8 @@ var score;
 
 function orderInit() {
     if (!musicNum) { return; }
+    var pos;
     foreach (i : py_range(info.musicNumMax)) {
-        static var pos = 0;
         if (info.genreActive[info.genreIndex[i]]) { orderArr[pos] = i; pos++; }
     }
     foreach (j : py_range(8)) {
