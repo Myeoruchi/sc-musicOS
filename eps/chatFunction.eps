@@ -5,13 +5,15 @@ import musicInfo as info;
 const patternAddrEPD = EPD(0x58D904);
 const chatAddrEPD = EPD(0x58D908);
 const strOffset = 0x58F500;
-const string = EUDCreateVariables(26);
-var strShare = false;
-var check = false;
+const string = EUDCreateVariables(27);
+var strShare;
+var check;
+var pos;
 
 function variableInit() {
     EUDRegisterObjectToNamespace("strShare", strShare);
-    foreach (i : py_range(26)) {
+    EUDRegisterObjectToNamespace("pos", pos);
+    foreach (i : py_range(27)) {
         EUDRegisterObjectToNamespace(py_eval('"str{}".format(i+1)'), string[i]);
     }
 }
@@ -24,15 +26,15 @@ function chatTypeUpdate() {
 
 function readChat() {
     if (dwread_epd(patternAddrEPD)) {
-        strShare = true; check = true;
-        foreach (i : py_range(26)) { string[i] = 0; }
+        strShare = true; check = true; pos = 0;
+        foreach (i : py_range(27)) { string[i] = 0; }
         const br = EUDByteReader();
         br.seekoffset(dwread_epd(chatAddrEPD));
-        foreach (i : py_range(26)) {
+        foreach (i : py_range(27)) {
             foreach (j : py_range(3)) {
                 const temp = br.readbyte();
                 if (temp) { string[i] += temp << (j << 3); }
-                else { return; }
+                else { string[i] += 27 << (j << 3); pos = i*3+j; return; }
             }
         }
     }
@@ -43,20 +45,21 @@ function writeChat(player) {
     foreach (cp : EUDLoopPlayer("Human")) {
         if (!mp.correct[cp]) {
             var timer;
-            if (fc.getDeath(cp, "Terran Ghost")) {
+            const pos = fc.getDeath(cp, "Zerg Drone");
+            if (pos && fc.getDeath(cp, $U("Terran Ghost")+pos/3)) {
                 if (cp == player) { check = false; timer = 0; }
-                for (var i = 0; i < 27; i++) {
+                for (var i = 0; i <= pos/3; i++) {
                     const byte3 = fc.getDeath(cp, $U("Terran Ghost")+i);
-                    if (byte3) { dwwrite(strOffset+i*3, byte3); }
-                    else { dwwrite(strOffset+i*3, 0); break; }
+                    dwwrite(strOffset+i*3, byte3);
                 }
+                bwrite(strOffset+pos, 0);
                 const index = mp.orderArr[mp.curMusic];
                 const max = info.indexArr[index];
                 const answer = EUDArray.cast(info.ansArr[index]);
                 var flag = true;
                 for (var i = 0; i < max; i++) {
                     if (!fc.strcmp2(strOffset, answer[i])) {
-                        if (mp.correct[player]) { println("{0:c}{0:n}: \x02{1:t}　　　　　　　　　　", cp, EPD(strOffset)); PlayWAV("sound\\Misc\\Transmission.wav"); }
+                        if (mp.correct[player]) { println("{0:c}{0:n}: \x02{1:t}　　　　　　　　　　　　　　　　　　　　", cp, EPD(strOffset)); PlayWAV("sound\\Misc\\Transmission.wav"); }
                         SetScore(cp, Add, mp.score, Custom);
                         println("\x1f■ {0:c}{0:n}\x04님이 정답을 맞혀 \x1c{1:}\x04점을 획득 했습니다.", cp, mp.score);
                         PlayWAV("staredit\\wav\\DiceItemStarFall_Swing.wav");
@@ -66,7 +69,7 @@ function writeChat(player) {
                         break;
                     }
                 }
-                if (flag && player != cp) { println("{0:c}{0:n}: \x02{1:t}　　　　　　　　　　", cp, EPD(strOffset)); PlayWAV("sound\\Misc\\Transmission.wav"); }
+                if (flag && player != cp) { println("{0:c}{0:n}: \x02{1:t}　　　　　　　　　　　　　　　　　　　　", cp, EPD(strOffset)); PlayWAV("sound\\Misc\\Transmission.wav"); }
             }
             if (check && cp == player) {
                 timer++;
