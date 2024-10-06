@@ -27,8 +27,8 @@ function orderInit() {
         if (info.genreActive[info.genreIndex[i]]) { orderArr[pos] = i; pos++; }
     }
     foreach (j : py_range(8)) {
-        for (var i = 0; i < musicNum-1; i++) {
-            const ranNum = dwrand() % (musicNum-i) + i;
+        foreach (i : py_range(info.musicNumMax-1)) {
+            const ranNum = dwrand() % (info.musicNumMax-i) + i;
             const temp = orderArr[i];
             orderArr[i] = orderArr[ranNum];
             orderArr[ranNum] = temp;
