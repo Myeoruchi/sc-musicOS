@@ -110,7 +110,7 @@ function opening(superUser) {
         }
     }
     once (timer == 12*78+2) {
-        foreach (i : py_range(info.genreNum)) { info.genreActive[i] = !genre[i]; }
+        foreach (i : py_range(info.genreNum)) { info.genreActive[i] = genre[i]; }
         mp.musicNum = musicNumReal;
         mp.ansOpen = !feature[0];
         mp.chatSeparate = !feature[1];

@@ -406,22 +406,19 @@ class App:
                 outfile.write(f'const musicNumMax = {musicNum};\n')
                 outfile.write(f'const genreNum = {genreNum};\n')
 
-                outfile.write(f'const genreActive = [')
-                for i in range(len(genreInclude)-1):
-                    outfile.write('1, ')
-                outfile.write('1];\n')    
+                outfile.write('const genreActive = EUDArray(genreNum);\n') 
 
-                outfile.write(f'const genreInclude = [')
+                outfile.write('const genreInclude = [')
                 for i in range(len(genreInclude)-1):
                     outfile.write(f'{genreInclude[i]}, ')
                 outfile.write(f'{genreInclude[-1]}];\n')
 
-                outfile.write(f'const genreName = [')
+                outfile.write('const genreName = [')
                 for i in range(len(genreName)-1):
                     outfile.write(f'EPD(Db("{genreName[i]}")), ')
                 outfile.write(f'EPD(Db("{genreName[-1]}"))];\n')
 
-                outfile.write(f'const genreIndex = [')
+                outfile.write('const genreIndex = [')
                 for i in range(len(genreIndex)-1):
                     outfile.write(f'{genreIndex[i]}, ')
                 outfile.write(f'{genreIndex[-1]}];\n')
