@@ -1,9 +1,10 @@
 import functions as fc;
 import musicPlay as mp;
 import musicInfo as info;
+import chatFuntions.ansOption as ansOption;
 
-const feature = [0, 1, 0, 0]; // 0 is on, 1 is off
-const genre = EUDArray(info.genreNum);
+const feature = [0, 1, 0, 0, 0]; // 0 is on, 1 is off
+const category = EUDArray(info.categoryNum);
 var click;
 var timer;
 var status;
@@ -74,15 +75,15 @@ function opening(superUser) {
         var index;
         if (clicked) {
             switch (clicked) {
-                case 1: index = index ? index-1 : info.genreNum-1; break;
-                case 2: index = index == info.genreNum-1 ? 0 : index+1; break;
+                case 1: index = index ? index-1 : info.categoryNum-1; break;
+                case 2: index = index == info.categoryNum-1 ? 0 : index+1; break;
                 case 3:
-                    genre[index] = !genre[index];
-                    if (genre[index]) {
-                        musicNumTemp -= info.genreInclude[index];
+                    category[index] = !category[index];
+                    if (category[index]) {
+                        musicNumTemp -= info.categoryInclude[index];
                         if (musicNumTemp < musicNumReal) { musicNumReal = musicNumTemp; }
                     }
-                    else { musicNumTemp += info.genreInclude[index]; }
+                    else { musicNumTemp += info.categoryInclude[index]; }
                     break;
                 case 4: if (musicNumReal) { musicNumReal--; } break;
                 case 5: musicNumReal = musicNumReal > 5 ? musicNumReal-5 : 0; break;
@@ -103,19 +104,20 @@ function opening(superUser) {
             s.appendf("\x13\x04전체 \x19{}\x04곡 중에 \x19{}\x04곡을 포함시켰고, \x19{}\x04곡 재생됩니다.\n", info.musicNumMax, musicNumTemp, musicNumReal);
             s.appendf("\x13\x08－１０　－５　－１　　\x04곡 수 조절　　\x07＋１　＋５　＋１０\n");
             s.appendf("\x13\x19▲\n");
-            s.appendf("\x13{:t}{:t}\n", genre[index] ? EPD(Db("\x08")) : EPD(Db("\x07")), info.genreName[index]);
+            s.appendf("\x13{:t}{:t}\n", category[index] ? EPD(Db("\x08")) : EPD(Db("\x07")), info.categoryName[index]);
             s.appendf("\x13\x19▼\n");
             s.appendf("\x13\x1D설정완료\n");
             s.appendf("\x13\x19┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛");
         }
     }
     once (timer == 12*78+2) {
-        foreach (i : py_range(info.genreNum)) { info.genreActive[i] = genre[i]; }
+        foreach (i : py_range(info.categoryNum)) { info.categoryActive[i] = category[i]; }
         mp.musicNum = musicNumReal;
         mp.ansOpen = !feature[0];
         mp.chatSeparate = !feature[1];
         mp.hint1 = !feature[2];
         mp.hint2 = !feature[3];
+        ansOption = !feature[4];
         mp.orderInit();
         s.insert(0);
         s.appendf("\x13\x19┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓\n\n\n");
@@ -131,7 +133,7 @@ function opening(superUser) {
 
 function help(pos) {
     if (status != 1) { return; }
-    const text = [EPD(Db("정답을 못 맞혔을 때 정답을 공개합니다.")), EPD(Db("정답을 맞힌 사람은 못 맞힌 사람과 채팅할 수 없습니다.")), EPD(Db("일반 힌트가 공개됩니다.")), EPD(Db("초성 힌트가 공개됩니다."))];
+    const text = [EPD(Db("노래가 끝날 때 정답을 공개합니다.")), EPD(Db("정답을 맞힌 사람의 채팅을 안보이게 합니다.")), EPD(Db("일반 힌트가 공개됩니다.")), EPD(Db("초성 힌트가 공개됩니다."))];
     const s = StringBuffer(1024);
     s.insert(0);
     if (pos) { s.appendf("\x1D( \x04활성화 할 경우 {:t} \x1D)", text[pos-1]); }

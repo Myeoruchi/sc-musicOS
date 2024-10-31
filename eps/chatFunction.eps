@@ -9,6 +9,7 @@ const string = EUDCreateVariables(27);
 var strShare;
 var check;
 var pos;
+var ansOption;
 
 function variableInit() {
     EUDRegisterObjectToNamespace("strShare", strShare);
@@ -55,6 +56,7 @@ function writeChat(player) {
                 bwrite(strOffset+pos, 0);
                 const index = mp.orderArr[mp.curMusic];
                 const max = info.indexArr[index];
+                const max = ansOption ? info.indexArr[index] >> 0x8 : info.indexArr % 0x100;
                 const answer = EUDArray.cast(info.ansArr[index]);
                 var flag = true;
                 for (var i = 0; i < max; i++) {

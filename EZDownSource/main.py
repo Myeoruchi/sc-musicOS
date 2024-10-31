@@ -125,6 +125,7 @@ class App:
             selectpath = filedialog.askdirectory()
         else:
             selectpath = filedialog.askopenfilename(filetypes=[("Excel files", "*.xlsx;*.xls")])
+
         if selectpath:
             path.delete(0, tk.END)  # 기존 경로 삭제
             path.insert(0, selectpath)  # 경로 삽입
@@ -144,7 +145,7 @@ class App:
         if not self.excel_path.get():
             messagebox.showerror("에러", "불러올 엑셀 파일을 선택해주세요.")
             return
-        elif not self.download_path.get():
+        if not self.download_path.get():
             messagebox.showerror("에러", "원본 음원 저장 경로를 선택해주세요.")
             return
         
@@ -166,35 +167,47 @@ class App:
             try:
                 df = pd.read_excel(self.excel_path.get())
             except Exception as e:
-                messagebox.showerror("에러", f"엑셀 파일을 불러오는 중 오류가 발생했습니다. : {e}")
+                messagebox.showerror("에러", f"엑셀 파일을 불러오는 중 오류가 발생했습니다. ({e})")
                 return
 
             musicNum = len(df)
             success = 0
             fail = 0
             skip = 0
+            unused = 0
             with YoutubeDL(ydl_opts) as ydl:
                 for idx, row in df.iterrows():
+                    if pd.notna(row['미사용']):
+                        self.log(f'다운로드 스킵 : {idx+1:03}행 (미사용)')
+                        skip += 1
+                        unused += 1
+                        continue
+
                     video_url = row['Addr']
+                    if pd.isna(video_url):
+                        self.log(f'다운로드 실패 : {idx+1:03}행 (Addr 비어있음)')
+                        fail += 1
+                        continue
+                    
                     try:
                         info_dict = ydl.extract_info(video_url, download=False)
                         video_id = info_dict.get("id", None)
                         downloaded_file = os.path.join(self.download_path.get(), f'{video_id}.mp3')
 
                         if os.path.exists(downloaded_file):
-                            self.log(f'다운로드 스킵 : {idx+1:03} - {row["제목"]}')
+                            self.log(f'다운로드 스킵 : {idx+1:03}행 (파일 존재함)')
                             skip += 1
                             continue
 
                         ydl.extract_info(video_url, download=True)
-                        self.log(f'다운로드 성공 : {idx+1:03} - {row["제목"]}')
+                        self.log(f'다운로드 성공 : {idx+1:03}행')
                         success += 1
 
                     except Exception as e:
-                        self.log(f'다운로드 실패 : {idx+1:03} - {row["제목"]} ({e})')
+                        self.log(f'다운로드 실패 : {idx+1:03}행 ({e})')
                         fail += 1
 
-            self.log(f'총 {musicNum}개 중 {success}개 성공, {fail}개 실패, {skip}개를 건너뛰었습니다.')
+            self.log(f'총 {musicNum}개 중 {success}개 성공, {fail}개 실패, {skip}개 (미사용 {unused}개)를 건너뛰었습니다.')
         
         thread = threading.Thread(target=download)
         thread.start()
@@ -205,10 +218,10 @@ class App:
         if not self.excel_path.get():
             messagebox.showerror("에러", "불러올 엑셀 파일을 선택해주세요.")
             return
-        elif not self.download_path.get():
+        if not self.download_path.get():
             messagebox.showerror("에러", "원본 음원 저장 경로를 선택해주세요.")
             return
-        elif not self.cut_path.get():
+        if not self.cut_path.get():
             messagebox.showerror("에러", "자른 음원 저장 경로를 선택해주세요.")
             return
         
@@ -232,18 +245,38 @@ class App:
             try:
                 df = pd.read_excel(self.excel_path.get())
             except Exception as e:
-                messagebox.showerror("에러", f"엑셀 파일을 불러오는 중 오류가 발생했습니다. : {e}")
+                messagebox.showerror("에러", f"엑셀 파일을 불러오는 중 오류가 발생했습니다. ({e})")
                 return
 
             musicNum = len(df)
             success = 0
             fail = 0
             skip = 0
+            unused = 0
             with YoutubeDL(ydl_opts) as ydl:
                 for idx, row in df.iterrows():
-                    video_url = row['Addr']
+                    if pd.notna(row['미사용']):
+                        self.log(f'자르기 스킵 : {idx+1:03}행 (미사용)')
+                        skip += 1
+                        unused += 1
+                        continue
+
+                    empty = []
+                    if pd.isna(row['Addr']):
+                        empty.append('Addr')
+                    if pd.isna(row['Start']):
+                        empty.append('Start')
+                    if pd.isna(row['End']):
+                        empty.append('End')
+
+                    if empty:
+                        empty_list = ', '.join(empty)
+                        self.log(f'자르기 실패 : {idx+1:03}행 (공백 : {empty_list})')
+                        fail += 1
+                        continue
+
                     try:
-                        info_dict = ydl.extract_info(video_url, download=False)
+                        info_dict = ydl.extract_info(row['Addr'], download=False)
                         video_id = info_dict.get("id", None)
                         downloaded_file = os.path.join(self.download_path.get(), f'{video_id}.mp3')
 
@@ -257,20 +290,20 @@ class App:
                             audio = AudioSegment.from_file(io.BytesIO(audio_data), format="mp3")
                             trimmed_audio = audio[start_time:end_time]
                             # 잘라낸 오디오를 순서대로 저장
-                            filename = f'{idx+1:03}.mp3'
+                            filename = f'{idx+1-unused:03}.mp3'
                             trimmed_audio.export(os.path.join(self.cut_path.get(), filename), format="mp3", bitrate="320k")
-                            self.log(f'자르기 성공 : {idx+1:03} - {row["제목"]}')
+                            self.log(f'자르기 성공 : {idx+1:03}행 → {filename}')
                             success += 1
                         else:
-                            self.log(f'음원 파일 없음 (스킵) : {idx+1:03} - {row["제목"]}')
+                            self.log(f'자르기 스킵 : {idx+1:03}행 (파일 없음)')
                             skip += 1
                             continue
 
                     except Exception as e:
-                        self.log(f'자르기 실패 : {idx+1:03} - {row["제목"]} ({e})')
+                        self.log(f'자르기 실패 : {idx+1:03}행 ({e})')
                         fail += 1
 
-            self.log(f'총 {musicNum}개 중 {success}개 성공, {fail}개 실패, {skip}개를 건너뛰었습니다.')
+            self.log(f'총 {musicNum}개 중 {success}개 성공, {fail}개 실패, {skip}개 (미사용 {unused}개)를 건너뛰었습니다.')
         
         thread = threading.Thread(target=cut)
         thread.start()
@@ -281,7 +314,7 @@ class App:
         if not self.excel_path.get():
             messagebox.showerror("에러", "불러올 엑셀 파일을 선택해주세요.")
             return
-        elif not self.cut_path:
+        if not self.cut_path:
             messagebox.showerror("에러", "자른 음원 저장 경로를 선택해주세요.")
             return
 
@@ -299,30 +332,39 @@ class App:
             try:
                 df = pd.read_excel(self.excel_path.get())
             except Exception as e:
-                messagebox.showerror("에러", f"엑셀 파일을 불러오는 중 오류가 발생했습니다. : {e}")
+                messagebox.showerror("에러", f"엑셀 파일을 불러오는 중 오류가 발생했습니다. : ({e})")
                 return
 
             musicNum = len(df)
             success = 0
             fail = 0
             skip = 0
+            unused = 0
             for idx, row in df.iterrows():
-                filename = f'{idx+1:03}.mp3'
+                if pd.notna(row['미사용']):
+                    self.log(f'볼륨 조절 스킵 : {idx+1:03}행 (미사용)')
+                    skip += 1
+                    unused += 1
+                    continue
+
+                filename = f'{idx+1-unused:03}.mp3'
                 if not os.path.exists(os.path.join(self.cut_path.get(), filename)):
-                    self.log(f'음원 파일 없음 (스킵) : {idx+1:03} - {row["제목"]}')
+                    self.log(f'볼륨 조절 스킵 : {idx+1:03}행 ({filename} 파일 없음)')
                     skip += 1
                     continue
+
                 command = ['mp3gain', '-c', '-r', '-d', str(vol), os.path.join(self.cut_path.get(), filename)]
                 try:
                     subprocess.run(command, check=True)
-                    self.log(f'볼륨 조절 성공 : {idx+1:03} - {row["제목"]}')
+                    self.log(f'볼륨 조절 성공 : {idx+1:03}행 ({filename})')
                     success += 1
+
                 except subprocess.CalledProcessError as e:
-                    self.log(f'볼륨 조절 실패 : {idx+1:03} - {row["제목"]}')
+                    self.log(f'볼륨 조절 실패 : {idx+1:03}행 ({e})')
                     fail +=1
                     continue
 
-            self.log(f'총 {musicNum}개 중 {success}개 성공, {fail}개 실패, {skip}개를 건너뛰었습니다.')
+            self.log(f'총 {musicNum}개 중 {success}개 성공, {fail}개 실패, {skip}개 (미사용 {unused}개)를 건너뛰었습니다.')
         
         thread = threading.Thread(target=volume)
         thread.start()
@@ -339,15 +381,15 @@ class App:
             try:
                 df = pd.read_excel(self.excel_path.get())
             except Exception as e:
-                messagebox.showerror("에러", f"엑셀 파일을 불러오는 중 오류가 발생했습니다. : {e}")
+                messagebox.showerror("에러", f"엑셀 파일을 불러오는 중 오류가 발생했습니다. : ({e})")
                 return
 
             CHOSUNG_LIST = ['ㄱ', 'ㄲ', 'ㄴ', 'ㄷ', 'ㄸ', 'ㄹ', 'ㅁ', 'ㅂ', 'ㅃ', 'ㅅ', 'ㅆ', 'ㅇ', 'ㅈ', 'ㅉ', 'ㅊ', 'ㅋ', 'ㅌ', 'ㅍ', 'ㅎ']
             musicNum = len(df)
-            genreNum = 0
-            genreInclude = []
-            genreName = []
-            genreIndex = []
+            categoryNum = 0
+            categoryInclude = []
+            categoryName = []
+            categoryIndex = []
             hint = 'const hintArr1 = ['
             chosung = 'const hintArr2 = ['
             artist = 'const artArr = ['
@@ -366,62 +408,96 @@ class App:
                         result.append(char)  # 한글이 아닌 경우 그대로 추가
                 return ''.join(result)
 
+            musicNum = len(df)
+            success = 0
+            fail = 0
+            unused = 0
             for idx, row in df.iterrows():
                 try:
-                    if row["장르 구분"] in genreName:
-                        index = genreName.index(row["장르 구분"])
-                        genreIndex.append(index)
-                        genreInclude[index] += 1
+                    if pd.notna(row['미사용']):
+                        self.log(f'추출 스킵 : {idx+1:03}행 (미사용)')
+                        unused += 1
+                        continue
+                    
+                    empty = []
+                    if pd.isna(row['범주']):
+                        empty.append('범주')
+                    if pd.isna(row['힌트1']):
+                        empty.append('힌트1')
+                    if pd.isna(row['가수']):
+                        empty.append('가수')
+                    if pd.isna(row['제목']):
+                        empty.append('제목')
+                    if pd.isna(row['Start']):
+                        empty.append('Start')
+                    if pd.isna(row['End']):
+                        empty.append('End')
+                    if pd.isna(row['정답 리스트1']):
+                        empty.append('정답 리스트1')
+                    
+                    if empty:
+                        empty_list = ', '.join(empty)
+                        self.log(f'추출 실패 : {idx+1:03}행 (공백 : {empty_list})')
+                        
+                    if row['범주'] in categoryName:
+                        index = categoryName.index(row['범주'])
+                        categoryIndex.append(index)
+                        categoryInclude[index] += 1
                     else:
-                        genreName.append(row["장르 구분"])
-                        genreIndex.append(genreNum)
-                        genreInclude.append(1)
-                        genreNum += 1
+                        categoryName.append(row['범주'])
+                        categoryIndex.append(categoryNum)
+                        categoryInclude.append(1)
+                        categoryNum += 1
 
-                    # 힌트, 가수와 제목, 정답 리스트, 정답 개수 데이터를 파일에 즉시 추가
                     hint += f'EPD(Db("{row["힌트1"]}")), '
                     artist += f'EPD(Db("{row["가수"]} - {row["제목"]}")), '
 
-                    # 정답 리스트 처리
-                    answers = row['정답 리스트'].split(',')  # ,로 구분된 정답 분리
+                    count = 0
+                    answers = row['정답 리스트1'].split(',')  # ,로 구분된 정답 분리
+                    count += len(answers)
+
+                    if pd.notna(row['정답 리스트2']):
+                        answers += row['정답 리스트2'].split(',')
+                        count += len(answers) << 0x8
+                        
                     answer_db_format = ', '.join([f'Db("{answer.strip()}")' for answer in answers])
                     answer_list += f'[{answer_db_format}], '
 
-                    # 정답 리스트에서 첫 번째 정답의 초성만 추출하여 파일에 저장
                     first_answer = answers[0].strip()
                     cho = extract_chosung(first_answer)
                     chosung += f'EPD(Db("{cho}")), '
 
-                    # 정답 개수 처리
-                    answer_count += f'{len(answers)}, '
-
-                    # 음악 길이 저장
+                    answer_count += f'{count}, '
                     music_length += f'{int(row["End"] - row["Start"])}, '
 
+                    self.log(f'추출 성공 : {idx+1:03} - {row["제목"]} ({idx+1-unused:03}.mp3)')
+                    success += 1
+
                 except Exception as e:
-                    self.log(f'추출 실패 : ({e})')
+                    self.log(f'추출 실패 : {idx+1:03} - {row["제목"]} ({e})')
+                    fail += 1
                     return
             
             with open('info.txt', 'w', encoding='utf-8') as outfile:
                 outfile.write(f'const musicNumMax = {musicNum};\n')
-                outfile.write(f'const genreNum = {genreNum};\n')
+                outfile.write(f'const categoryNum = {categoryNum};\n')
 
-                outfile.write('const genreActive = EUDArray(genreNum);\n') 
+                outfile.write('const categoryActive = EUDArray(categoryNum);\n') 
 
-                outfile.write('const genreInclude = [')
-                for i in range(len(genreInclude)-1):
-                    outfile.write(f'{genreInclude[i]}, ')
-                outfile.write(f'{genreInclude[-1]}];\n')
+                outfile.write('const categoryInclude = [')
+                for i in range(len(categoryInclude)-1):
+                    outfile.write(f'{categoryInclude[i]}, ')
+                outfile.write(f'{categoryInclude[-1]}];\n')
 
-                outfile.write('const genreName = [')
-                for i in range(len(genreName)-1):
-                    outfile.write(f'EPD(Db("{genreName[i]}")), ')
-                outfile.write(f'EPD(Db("{genreName[-1]}"))];\n')
+                outfile.write('const categoryName = [')
+                for i in range(len(categoryName)-1):
+                    outfile.write(f'EPD(Db("{categoryName[i]}")), ')
+                outfile.write(f'EPD(Db("{categoryName[-1]}"))];\n')
 
-                outfile.write('const genreIndex = [')
-                for i in range(len(genreIndex)-1):
-                    outfile.write(f'{genreIndex[i]}, ')
-                outfile.write(f'{genreIndex[-1]}];\n')
+                outfile.write('const categoryIndex = [')
+                for i in range(len(categoryIndex)-1):
+                    outfile.write(f'{categoryIndex[i]}, ')
+                outfile.write(f'{categoryIndex[-1]}];\n')
                 
                 outfile.write(f'{music_length[:-2]}];\n')
                 outfile.write(f'{answer_count[:-2]}];\n')
@@ -430,7 +506,7 @@ class App:
                 outfile.write(f'{hint[:-2]}];\n')
                 outfile.write(f'{chosung[:-2]}];\n')
 
-            self.log(f'추출에 성공했습니다.')
+            self.log(f'총 {musicNum}개 중 {success}개 성공, {fail}개 실패, {unused}개를 미사용 했습니다.')
         
         thread = threading.Thread(target=extract)
         thread.start()
