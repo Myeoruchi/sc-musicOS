@@ -7,10 +7,10 @@ const vote = PVariable();
 const correct = PVariable();
 const hintTime = [40, 15];
 var musicNum;
-var ansOpen;
 var chatSeparate;
 var hint1;
 var hint2;
+var autoSkip;
 var curMusic = -1;
 var index;
 var musicTimer;
@@ -87,7 +87,7 @@ function musicText(p, flag) {
         }
         musicTimer++;
     }
-    if (!ans && ((ansOpen && !flag) || correct[p])) {
+    if (!ans && (!flag || correct[p])) {
         ans = true;
         s.appendf("\n\x13\x1F정답 \x04: {:t}", info.artArr[index]);
     }
@@ -121,6 +121,7 @@ function musicSkip(superUser, p) {
         }
     }
     if (!notCorrect) {
+        if (autoSkip) { simpleprint("\x1F■ \x04현재 곡을 자동 스킵합니다."); PlayWAV("staredit\\wav\\Clear.wav"); return true; }
         notCorrect = skipRequireNum;
         foreach (cp : EUDLoopPlayer("Human")) {
             if (vote[cp]) {
