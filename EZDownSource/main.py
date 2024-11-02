@@ -1,5 +1,4 @@
 import os
-import io
 import json
 import subprocess
 import tkinter as tk
@@ -7,9 +6,8 @@ import threading
 from tkinter import simpledialog, filedialog, messagebox
 import pandas as pd
 from yt_dlp import YoutubeDL
-from pydub import AudioSegment
 
-Version = 'v2.0'
+Version = 'v2.1'
 settings_file = 'settings.json'
 
 class App:
@@ -281,18 +279,14 @@ class App:
                         downloaded_file = os.path.join(self.download_path.get(), f'{video_id}.mp3')
 
                         if os.path.exists(downloaded_file):
-                            start_time = row['Start'] * 1000
-                            end_time = row['End'] * 1000
-                            # 파일을 메모리로 읽어서 처리
-                            with open(downloaded_file, 'rb') as f:
-                                audio_data = f.read()
-                            # 오디오 파일을 메모리에서 불러와서 지정된 구간을 잘라내기
-                            audio = AudioSegment.from_file(io.BytesIO(audio_data), format="mp3")
-                            trimmed_audio = audio[start_time:end_time]
-                            # 잘라낸 오디오를 순서대로 저장
-                            filename = f'{idx+1-unused:03}.mp3'
-                            trimmed_audio.export(os.path.join(self.cut_path.get(), filename), format="mp3", bitrate="320k")
-                            self.log(f'자르기 성공 : {idx+1:03}행 → {filename}')
+                            output_file = os.path.join(self.cut_path.get(), f'{idx+1-unused:03}.mp3')
+                            command = [
+                                'ffmpeg', '-y', '-i', downloaded_file,
+                                '-ss', str(row['Start']), '-to', str(row['End']),
+                                '-c', 'copy', output_file
+                            ]
+                            subprocess.run(command, creationflags=subprocess.CREATE_NO_WINDOW, check=True)
+                            self.log(f'자르기 성공 : {idx+1:03}행 → {idx+1-unused:03}')
                             success += 1
                         else:
                             self.log(f'자르기 스킵 : {idx+1:03}행 (파일 없음)')
@@ -355,7 +349,7 @@ class App:
 
                 command = ['mp3gain', '-c', '-r', '-d', str(vol), os.path.join(self.cut_path.get(), filename)]
                 try:
-                    subprocess.run(command, check=True)
+                    subprocess.run(command, creationflags=subprocess.CREATE_NO_WINDOW, check=True)
                     self.log(f'볼륨 조절 성공 : {idx+1:03}행 ({filename})')
                     success += 1
 
@@ -479,7 +473,7 @@ class App:
                     return
             
             with open('info.txt', 'w', encoding='utf-8') as outfile:
-                outfile.write(f'const musicNumMax = {musicNum};\n')
+                outfile.write(f'const musicNumMax = {musicNum-unused};\n')
                 outfile.write(f'const categoryNum = {categoryNum};\n')
 
                 outfile.write('const categoryActive = EUDArray(categoryNum);\n') 

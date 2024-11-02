@@ -1,7 +1,7 @@
 import functions as fc;
 import musicPlay as mp;
 import musicInfo as info;
-import chatFuntions.ansOption as ansOption;
+import chatFunction as cf;
 
 const feature = [0, 1, 0, 0, 0]; // 0 is on, 1 is off
 const category = EUDArray(info.categoryNum);
@@ -105,7 +105,7 @@ function opening(superUser) {
     once (timer == 12*48+2) {
         foreach (i : py_range(info.categoryNum)) { info.categoryActive[i] = category[i]; }
         mp.musicNum = musicNumReal;
-        ansOption = !feature[0];
+        cf.ansOption = !feature[0];
         mp.chatSeparate = !feature[1];
         mp.hint1 = !feature[2];
         mp.hint2 = !feature[3];
