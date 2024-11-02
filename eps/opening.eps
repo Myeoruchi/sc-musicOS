@@ -1,9 +1,10 @@
 import functions as fc;
 import musicPlay as mp;
 import musicInfo as info;
+import chatFuntions.ansOption as ansOption;
 
-const feature = [0, 1, 0, 0]; // 0 is on, 1 is off
-const genre = EUDArray(info.genreNum);
+const feature = [0, 1, 0, 0, 0]; // 0 is on, 1 is off
+const category = EUDArray(info.categoryNum);
 var click;
 var timer;
 var status;
@@ -23,28 +24,19 @@ function opening(superUser) {
         s.appendf("\x13\x19┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓\n\n\n");
         s.appendf("\x13\x11노래 맞히기 오픈소스\n");
         s.appendf("\x13\x04제작 : Myeoruchi (Heaven)\n");
-        s.appendf("\x13\x04갈대님의 오픈소스를 참고하여 만들었습니다.\n\n\n");
+        s.appendf("\x13\x04오픈소스 : Myeoruchi (Heaven)\n\n\n");
         s.appendf("\x13\x19┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛");
     }
     once (timer == 12*18) {
         PlayWAV("staredit\\wav\\questnew2.wav");
         s.insert(0);
         s.appendf("\x13\x19┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓\n\n\n");
-        s.appendf("\x13\x1E이 유즈맵\x04은 들려오는 음악을 듣고, \x1F채팅\x04으로 음악을 맞히는 맵입니다.\n");
-        s.appendf("\x13\x1B힌트\x04는 한 곡당 \x112번 \x04제공되며, 설정에 따라 제공되지 않을 수 있습니다.\n");
-        s.appendf("\x13\x08맞힌 정답\x04은 공개되지 않으며, 설정에 따라 정답자의 \x1F채팅\x04이 분리됩니다.\n\n\n");
+        s.appendf("\x13\x04정답을 맞혀도 \x11타인에게 보이지 않습니다.\n");
+        s.appendf("\x13\x04스킵 : 못맞힌 사람의 전원 투표, 모두 맞혔을 경우 과반수 투표, 강제 스킵\n", superUser);
+        s.appendf("\x13\x04최대 3점에서 힌트 등장 시마다 획득 가능한 점수 1점 감점\n\n\n");
         s.appendf("\x13\x19┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛");
     }
-    once (timer == 12*48) {
-        PlayWAV("staredit\\wav\\questnew2.wav");
-        s.insert(0);
-        s.appendf("\x13\x19┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓\n\n\n");
-        s.appendf("\x13\x04스킵은 못 맞힌 사람이 \x08전부 투표\x04하거나, 모두가 맞힌 후 \x08과반수\x04가 투표해야 합니다.\n");
-        s.appendf("\x13\x1B색 순서\x04에 따라 \x1c가장 빠른 \x04플레이어는 \x19\"P\"\x04키를 눌러 강제 스킵이 가능합니다.\n");
-        s.appendf("\x13\x04힌트가 등장하기 전에 맞힌 사람은 각각 3점, 2점을 얻게 되며, 그 이후는 1점을 얻습니다.\n\n\n");
-        s.appendf("\x13\x19┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛");
-    }
-    if (timer == 12*78) {
+    if (timer == 12*48) {
         once { status = 1; txtUpdate = true; }
         CenterView("Anywhere");
         const clicked = fc.getDeath(superUser, "Terran Marine");
@@ -61,28 +53,28 @@ function opening(superUser) {
             s.appendf("\x13{0:c}{0:n}\x04님이 설정합니다.\n", superUser);
             s.appendf("\x13\x19설정\x04은 \x1E마우스 클릭\x04으로 진행할 수 있습니다.\n");
             s.appendf("\x13\x07초록색\x04은 활성화이며, \x08붉은색\x04은 비활성화입니다.\n\n");
-            s.appendf("\x13{:t}정답공개　　　{:t}채팅분리\n", feature[0] ? EPD(Db("\x08")) : EPD(Db("\x07")), feature[1] ? EPD(Db("\x08")) : EPD(Db("\x07")));
+            s.appendf("\x13{:t}줄임말답　　　{:t}채팅분리\n", feature[0] ? EPD(Db("\x08")) : EPD(Db("\x07")), feature[1] ? EPD(Db("\x08")) : EPD(Db("\x07")));
             s.appendf("\x13{:t}일반힌트　　　{:t}초성힌트\n", feature[2] ? EPD(Db("\x08")) : EPD(Db("\x07")), feature[3] ? EPD(Db("\x08")) : EPD(Db("\x07")));
             s.appendf("\x13\x1D설정완료\n");
             s.appendf("\x13\x19┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛");
         }
     }
-    else if (timer == 12*78+1) {
+    else if (timer == 12*48+1) {
         once { status = 2; txtUpdate = true; }
         CenterView("Anywhere");
         const clicked = fc.getDeath(superUser, "Terran Marine");
         var index;
         if (clicked) {
             switch (clicked) {
-                case 1: index = index ? index-1 : info.genreNum-1; break;
-                case 2: index = index == info.genreNum-1 ? 0 : index+1; break;
+                case 1: index = index ? index-1 : info.categoryNum-1; break;
+                case 2: index = index == info.categoryNum-1 ? 0 : index+1; break;
                 case 3:
-                    genre[index] = !genre[index];
-                    if (genre[index]) {
-                        musicNumTemp -= info.genreInclude[index];
+                    category[index] = !category[index];
+                    if (category[index]) {
+                        musicNumTemp -= info.categoryInclude[index];
                         if (musicNumTemp < musicNumReal) { musicNumReal = musicNumTemp; }
                     }
-                    else { musicNumTemp += info.genreInclude[index]; }
+                    else { musicNumTemp += info.categoryInclude[index]; }
                     break;
                 case 4: if (musicNumReal) { musicNumReal--; } break;
                 case 5: musicNumReal = musicNumReal > 5 ? musicNumReal-5 : 0; break;
@@ -99,20 +91,21 @@ function opening(superUser) {
             txtUpdate = false;
             s.insert(0);
             s.appendf("\x13\x19┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓\n");
-            s.appendf("\x13{0:c}{0:n}\x04님이 설정합니다.\n", superUser);
+            s.appendf("\x13\x1f범주를 클릭\x04해서 제외할 범주를 선택하세요.\n", superUser);
             s.appendf("\x13\x04전체 \x19{}\x04곡 중에 \x19{}\x04곡을 포함시켰고, \x19{}\x04곡 재생됩니다.\n", info.musicNumMax, musicNumTemp, musicNumReal);
             s.appendf("\x13\x08－１０　－５　－１　　\x04곡 수 조절　　\x07＋１　＋５　＋１０\n");
             s.appendf("\x13\x19▲\n");
-            s.appendf("\x13{:t}{:t}\n", genre[index] ? EPD(Db("\x08")) : EPD(Db("\x07")), info.genreName[index]);
+            s.appendf("\x13{:t}{:t}\n", category[index] ? EPD(Db("\x08")) : EPD(Db("\x07")), info.categoryName[index]);
             s.appendf("\x13\x19▼\n");
             s.appendf("\x13\x1D설정완료\n");
             s.appendf("\x13\x19┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛");
         }
+        eprintf("곡 수 조절기와 범주는 별개의 항목입니다.");
     }
-    once (timer == 12*78+2) {
-        foreach (i : py_range(info.genreNum)) { info.genreActive[i] = !genre[i]; }
+    once (timer == 12*48+2) {
+        foreach (i : py_range(info.categoryNum)) { info.categoryActive[i] = category[i]; }
         mp.musicNum = musicNumReal;
-        mp.ansOpen = !feature[0];
+        ansOption = !feature[0];
         mp.chatSeparate = !feature[1];
         mp.hint1 = !feature[2];
         mp.hint2 = !feature[3];
@@ -120,18 +113,18 @@ function opening(superUser) {
         s.insert(0);
         s.appendf("\x13\x19┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓\n\n\n");
         s.appendf("\x13\x1F설정\x04이 전부 끝났습니다. 잠시 후, 게임이 시작됩니다.\n");
-        s.appendf("\x13\x19정답\x04을 입력하실 땐, \x1D띄어쓰기 및 대소문자\x04는 상관하지 않습니다.\n");
-        s.appendf("\x13\x1EEx. 유즈맵 → 유즈 맵 / usemap → Us EMap\n\n\n");
+        s.appendf("\x13\x1D띄어쓰기와 대소문자\x04는 상관 없습니다.\n");
+        s.appendf("\x13\x04강제 스킵 : \x19\"P\"\x04, 자동 스킵 : \x19\"Insert\"\x04 ({0:c}{0:n}\x04)\n\n\n", superUser);
         s.appendf("\x13\x19┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛");
     }
-    once (timer == 12*108) { fc.leaderBoard(); println("\n\n\n\n\n\n\n\n\n\n "); return true; }
+    once (timer == 12*68) { fc.leaderBoard(); println("\n\n\n\n\n\n\n\n\n\n "); return true; }
     s.DisplayAt(0);
     return false;
 }
 
 function help(pos) {
     if (status != 1) { return; }
-    const text = [EPD(Db("정답을 못 맞혔을 때 정답을 공개합니다.")), EPD(Db("정답을 맞힌 사람은 못 맞힌 사람과 채팅할 수 없습니다.")), EPD(Db("일반 힌트가 공개됩니다.")), EPD(Db("초성 힌트가 공개됩니다."))];
+    const text = [EPD(Db("제작자가 설정한 줄임말 정답을 허용합니다.")), EPD(Db("정답을 맞힌 사람의 채팅을 안보이게 합니다.")), EPD(Db("일반 힌트가 공개됩니다.")), EPD(Db("초성 힌트가 공개됩니다."))];
     const s = StringBuffer(1024);
     s.insert(0);
     if (pos) { s.appendf("\x1D( \x04활성화 할 경우 {:t} \x1D)", text[pos-1]); }

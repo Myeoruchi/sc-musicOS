@@ -10,7 +10,6 @@ var superUser;
 var status;
 
 function onPluginStart() {
-    fc.singleBan();
     fc.speedBan();
     randomize();
     op.mouseInit();
@@ -24,14 +23,16 @@ function onPluginStart() {
 function beforeTriggerExec() {
     setcurpl(cp);
     if (!playerexist(superUser)) { foreach (cp : EUDLoopPlayer("Human")) { superUser = cp; break; } }
-    switch (status) {
-        case 0:
-            op.help(op.mouseCheck(superUser));
-            break;
-        case 1:
-            cf.readChat();
-            break;
+    if (status) {
+        if (status == 1) { cf.readChat(); }
+        if (fc.getDeath(superUser, "Protoss Dragoon") && status != 4) {
+            mp.autoSkip = !mp.autoSkip;
+            if (mp.autoSkip) { simpleprint("\x1F■ \x04자동 스킵이 활성화 되어 모두가 맞혔을 때 자동으로 스킵됩니다."); }
+            else { simpleprint("\x1F■ \x04자동 스킵이 비활성화 되어 자동으로 스킵되지 않습니다."); }
+            PlayWAV("staredit\\wav\\0115.WAV");
+        }
     }
+    else { op.help(op.mouseCheck(superUser)); }
 }
 
 function afterTriggerExec() {
