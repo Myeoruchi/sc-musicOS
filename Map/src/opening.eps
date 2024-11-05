@@ -135,7 +135,7 @@ function opening(superUser) {
 
 function help(pos) {
     if (status != 1) { return; }
-    const text = [EPD(Db("제작자가 설정한 줄임말 정답을 허용합니다.")), EPD(Db("정답을 맞힌 사람의 채팅을 안보이게 합니다.")), EPD(Db("일반 힌트가 공개됩니다.")), EPD(Db("초성 힌트가 공개됩니다."))];
+    const text = [EPD(Db("제작자가 설정한 추가 정답을 허용합니다.")), EPD(Db("정답을 맞힌 사람의 채팅을 안보이게 합니다.")), EPD(Db("첫번째 힌트가 공개됩니다.")), EPD(Db("초성 힌트가 공개됩니다."))];
     const s = StringBuffer(1024);
     s.insert(0);
     if (pos) { s.appendf("\x1D( \x04활성화 할 경우 {:t} \x1D)", text[pos-1]); }
