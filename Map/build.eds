@@ -1,0 +1,114 @@
+::-----------------------------------------------------------------
+:: 맵 경로 설정
+
+:: input은 기본 맵의 경로입니다.
+:: output은 나올 맵의 경로와 이름이므로 수정하셔도 됩니다.
+[main]
+input : .\input.scx
+output : .\output.scx
+
+::-----------------------------------------------------------------
+:: 잘 모르시면 건드리지 마세요
+
+[eudTurbo]
+
+[chatEvent]
+__patternAddr__ : 0x58D904
+__ptrAddr__ : 0x58D908
+^.*.*$ : 1000
+
+::-----------------------------------------------------------------
+
+[src\main.eps]
+::-----------------------------------------------------------------
+:: 기본 설정
+
+:: title은 스타에서 보여질 맵의 제목입니다.
+:: description은 방 파기 전에 보여지는 맵의 설명입니다.
+:: force1, force2는 대기실에서 보이는 force에 들어갈 문구입니다.
+
+title : 노래 맞히기 오픈소스
+description : 노래 맞히기 오픈소스로 제작되었습니다.
+force1 : 제작 : Myeoruchi
+force2 : 소스 : Myeoruchi
+
+::-----------------------------------------------------------------
+:: 텍스트 설정
+
+:: 오프닝이나 엔딩 멘트에 들어갈 제작자 이름입니다.
+maker : Myeoruchi (Heaven)
+
+:: leaderboard는 리더보드에 보여질 문구입니다.
+leaderboard : 고인물
+
+:: 힌트1의 이름입니다.
+:: 클릭인식 좌표 때문에 4글자로 맞춰야 원할한 진행이 가능합니다.
+:: 4글자 미만일 경우 "　" (ㄱ한자 1)를 넣어 맞춰주세요.
+hint1_name : 일반힌트
+
+:: 옵션에 나타날 정답 리스트2의 이름입니다.
+:: 마찬가지로 4글자로 맞춰주세요.
+answer_allow : 줄임말답
+
+::-----------------------------------------------------------------
+:: 기능 조절
+
+:: 몇 초에 힌트를 공개할 지 적으시면 됩니다.
+hint1_open : 40
+hint2_open : 15
+
+:: score_max는 한 번에 획득할 수 있는 최대 점수입니다.
+:: score_diff는 힌트 공개마다 획득하는 점수의 감소량입니다.
+score_max : 3
+score_diff : 1
+
+::-----------------------------------------------------------------
+:: 효과음
+
+:: effect 폴더 내에 원하시는 파일을 넣고, 이름을 바꿔주시면 됩니다.
+:: ogg 혹은 wav 파일만 가능합니다.
+opening1 : opening1.wav
+opening2 : opening2.ogg
+click : click.wav
+skip : skip.wav
+correct : correct.wav
+
+::-----------------------------------------------------------------
+:: 잘 모르시면 **진짜로** 건드리지 마세요
+
+[MSQC]
+QCDebug: false
+k; NotTyping: Protoss Probe, 1
+p; NotTyping: Protoss Zealot, 1
+Insert; NotTyping: Protoss Dragoon, 1
+click; val, click: Terran Marine
+strShare; pos; val, pos: Zerg Drone
+strShare; str1; val, str1: Terran Ghost
+strShare; str2; val, str2: Terran Vulture
+strShare; str3; val, str3: Terran Goliath
+strShare; str4; val, str4: Goliath Turret
+strShare; str5; val, str5: Terran Siege Tank (Tank Mode)
+strShare; str6; val, str6: Siege Tank Turret (Tank Mode)
+strShare; str7; val, str7: Terran SCV
+strShare; str8; val, str8: Terran Wraith
+strShare; str9; val, str9: Terran Science Vessel
+strShare; str10; val, str10: Gui Montag
+strShare; str11; val, str11: Terran Dropship
+strShare; str12; val, str12: Terran Battlecruiser
+strShare; str13; val, str13: Vulture Spider Mine
+strShare; str14; val, str14: Nuclear Missile
+strShare; str15; val, str15: Terran Civilian
+strShare; str16; val, str16: Sarah Kerrigan
+strShare; str17; val, str17: Alan Schezar
+strShare; str18; val, str18: Alan Turret
+strShare; str19; val, str19: Jim Raynor (Vulture)
+strShare; str20; val, str20: Jim Raynor (Marine)
+strShare; str21; val, str21: Tom Kazansky
+strShare; str22; val, str22: Magellan
+strShare; str23; val, str23: Edmund Duke (Tank Mode)
+strShare; str24; val, str24: Edmund Duke Turret (Tank Mode)
+strShare; str25; val, str25: Edmund Duke (Siege Mode)
+strShare; str26; val, str26: Edmund Duke Turret (Siege Mode)
+strShare; str27; val, str27: Arcturus Mengsk (Battlecruiser)
+
+::-----------------------------------------------------------------

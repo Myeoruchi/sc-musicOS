@@ -1,0 +1,29 @@
+import build.segCount;
+
+const s = StringBuffer(1024);
+var lastTime;
+var bgmIndex;
+var segIndex;
+
+function SetBGM (bIndex) {
+	bgmIndex = bIndex;
+	lastTime = dwread_epd(EPD(0x51CE8C));
+	segIndex = 0;
+}
+
+function Play() {
+	const curTime = dwread_epd(EPD(0x51CE8C));
+	const frameTick = (lastTime - curTime);
+
+	if (frameTick >= 2220) {
+		lastTime = dwread_epd(EPD(0x51CE8C));
+		dbstr_print(GetMapStringAddr(s.StringIndex), bgmIndex, "-", segIndex);
+		s.Play();
+		segIndex++;
+		if (segIndex > segCount[bgmIndex]) { segIndex = 0; }
+	}
+}
+
+function ResetTrack() {
+	segIndex = 0;
+}

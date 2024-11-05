@@ -7,7 +7,8 @@ from tkinter import simpledialog, filedialog, messagebox
 import pandas as pd
 from yt_dlp import YoutubeDL
 
-Version = 'v2.1'
+SEGMENT_DURATION = 2.28
+VERSION = 'v2.1'
 settings_file = 'settings.json'
 
 class App:
@@ -15,7 +16,7 @@ class App:
         self.root = root
         
         #타이틀
-        self.root.title(f"EZDown {Version}")
+        self.root.title(f"EZDown {VERSION}")
 
         #창 크기 고정
         self.root.geometry("600x400")
@@ -63,23 +64,19 @@ class App:
 
         # 버튼을 넣을 Frame을 생성
         self.button_frame = tk.Frame(root)
-        self.button_frame.grid(row=3, column=0, columnspan=4, pady=10)
+        self.button_frame.grid(row=3, column=0, columnspan=3, pady=10)
 
         # 음원 다운로드 버튼
         self.button_download = tk.Button(self.button_frame, text="음원 다운로드", width=15, command=self.music_download)
         self.button_download.grid(row=3, column=0, padx=10, pady=10)
 
         # 음원 자르기
-        self.button_cut = tk.Button(self.button_frame, text="음원 자르기", width=15, command=self.music_cut)
+        self.button_cut = tk.Button(self.button_frame, text="음원 볼륨 조절 및 자르기", width=20, command=self.music_cut)
         self.button_cut.grid(row=3, column=1, padx=10, pady=10)
-
-        # 볼륨 조절
-        self.button_volume = tk.Button(self.button_frame, text="볼륨 조절", width=15, command=self.music_volume)
-        self.button_volume.grid(row=3, column=2, padx=10, pady=10)
 
         # 정보 추출 버튼
         self.button_extract = tk.Button(self.button_frame, text="정보 추출", width=15, command=self.extract_info)
-        self.button_extract.grid(row=3, column=3, padx=10, pady=10)
+        self.button_extract.grid(row=3, column=2, padx=10, pady=10)
 
         # 로그창
         self.log_text = tk.Text(root, height=10, wrap=tk.WORD, state="disabled")
@@ -146,9 +143,7 @@ class App:
         if not self.download_path.get():
             messagebox.showerror("에러", "원본 음원 저장 경로를 선택해주세요.")
             return
-        
-        if not os.path.exists(self.download_path.get()):
-            os.makedirs(self.download_path.get())
+        os.makedirs(self.download_path.get(), exist_ok=True)
 
         def download():
             ydl_opts = {
@@ -222,11 +217,19 @@ class App:
         if not self.cut_path.get():
             messagebox.showerror("에러", "자른 음원 저장 경로를 선택해주세요.")
             return
-        
-        if not os.path.exists(self.download_path.get()):
-            os.makedirs(self.download_path.get())
-        if not os.path.exists(self.cut_path.get()):
-            os.makedirs(self.cut_path.get())
+        os.makedirs(self.download_path.get(), exist_ok=True)
+        os.makedirs(self.cut_path.get(), exist_ok=True)
+
+        vol = simpledialog.askfloat("볼륨 설정기", "설정할 볼륨을 입력하세요.\n추천값 : 93.0±", parent=root)
+        if not vol:
+            self.log("볼륨 조절 / 자르기 작업 취소")
+            return
+        vol -= 89.0
+
+        quality = simpledialog.askfloat("음질 설정기", "설정할 음질을 입력하세요.\n범위는 1~10 사이며, 클수록 용량이 커집니다.", parent=root)
+        if not quality:
+            self.log("볼륨 조절 / 자르기 작업 취소")
+            return
 
         def cut():
             ydl_opts = {
@@ -246,16 +249,18 @@ class App:
                 messagebox.showerror("에러", f"엑셀 파일을 불러오는 중 오류가 발생했습니다. ({e})")
                 return
 
+            subprocess.run(f'del /s /f /q "{self.cut_path.get()}"', shell=True, creationflags=subprocess.CREATE_NO_WINDOW, check=True)
+
             musicNum = len(df)
             success = 0
             fail = 0
-            skip = 0
             unused = 0
+            op = 0
+            end = 0
             with YoutubeDL(ydl_opts) as ydl:
                 for idx, row in df.iterrows():
                     if pd.notna(row['미사용']):
-                        self.log(f'자르기 스킵 : {idx+1:03}행 (미사용)')
-                        skip += 1
+                        self.log(f'볼륨 조절 / 자르기 스킵 : {idx+1:03}행 (미사용)')
                         unused += 1
                         continue
 
@@ -269,7 +274,7 @@ class App:
 
                     if empty:
                         empty_list = ', '.join(empty)
-                        self.log(f'자르기 실패 : {idx+1:03}행 (공백 : {empty_list})')
+                        self.log(f'볼륨 조절 / 자르기 실패 : {idx+1:03}행 (공백 : {empty_list})')
                         fail += 1
                         continue
 
@@ -279,88 +284,65 @@ class App:
                         downloaded_file = os.path.join(self.download_path.get(), f'{video_id}.mp3')
 
                         if os.path.exists(downloaded_file):
-                            output_file = os.path.join(self.cut_path.get(), f'{idx+1-unused:03}.mp3')
+                            if pd.notna(row['오프닝/엔딩']):
+                                if row['오프닝/엔딩'] == '오프닝':
+                                    path = self.cut_path.get() + '/OP'
+                                    op += 1
+                                else:
+                                    path = self.cut_path.get() + '/ED'
+                                    end += 1
+                            else:
+                                path = self.cut_path.get() + f'/{idx+1-unused-op-end:03}'
+                            os.makedirs(path, exist_ok=True)
+                            output_file = path + '/cut.mp3'
+
                             command = [
-                                'ffmpeg', '-y', '-i', downloaded_file,
-                                '-ss', str(row['Start']), '-to', str(row['End']),
+                                'ffmpeg',
+                                '-ss', str(row['Start']),
+                                '-to', str(row['End']),
+                                '-i', downloaded_file,
+                                '-reset_timestamps', '1',
                                 '-c', 'copy', output_file
                             ]
                             subprocess.run(command, creationflags=subprocess.CREATE_NO_WINDOW, check=True)
-                            self.log(f'자르기 성공 : {idx+1:03}행 → {idx+1-unused:03}')
+
+                            command = ['mp3gain', '-c', '-r', '-d', str(vol), output_file]
+                            subprocess.run(command, creationflags=subprocess.CREATE_NO_WINDOW, check=True)
+                            
+                            command = [
+                                'ffmpeg',
+                                '-i', output_file,
+                                '-f', 'segment',
+                                '-segment_time', str(SEGMENT_DURATION),
+                                '-reset_timestamps', '1',
+                                '-c:a', 'libvorbis',
+                                '-q:a', str(quality),
+                                path + '/%03d.ogg'
+                            ]
+                            subprocess.run(command, creationflags=subprocess.CREATE_NO_WINDOW, check=True)
+
+                            self.log(f'볼륨 조절 / 자르기 성공 : {idx+1:03}행')
                             success += 1
                         else:
-                            self.log(f'자르기 스킵 : {idx+1:03}행 (파일 없음)')
-                            skip += 1
+                            self.log(f'볼륨 조절 / 자르기 실패 : {idx+1:03}행 (파일 없음)')
+                            fail += 1
                             continue
 
                     except Exception as e:
-                        self.log(f'자르기 실패 : {idx+1:03}행 ({e})')
+                        self.log(f'볼륨 조절 / 자르기 실패 : {idx+1:03}행 ({e})')
                         fail += 1
 
-            self.log(f'총 {musicNum}개 중 {success}개 성공, {fail}개 실패, {skip}개 (미사용 {unused}개)를 건너뛰었습니다.')
+                subprocess.run(f'del /s /f /q "{self.cut_path.get()}\\*.mp3"', shell=True, creationflags=subprocess.CREATE_NO_WINDOW, check=True)
+
+            with open(f'{self.cut_path.get()}/info.txt', 'w', encoding='utf-8') as f:
+                if fail:
+                    f.write('fail')
+                else:
+                    f.write(f'{musicNum-unused-op-end}\n{op}\n{end}')
+            self.log(f'총 {musicNum}개 중 {success}개 성공, {fail}개 실패, {unused}개 미사용 했습니다.')
+            self.log(f'{op+end}개의 곡이 오프닝/엔딩 곡으로 사용됐습니다.')
         
         thread = threading.Thread(target=cut)
-        thread.start()
-    
-    def music_volume(self):
-        """볼륨을 조절하는 함수"""
-        # 경로 검사
-        if not self.excel_path.get():
-            messagebox.showerror("에러", "불러올 엑셀 파일을 선택해주세요.")
-            return
-        if not self.cut_path:
-            messagebox.showerror("에러", "자른 음원 저장 경로를 선택해주세요.")
-            return
-
-        if not os.path.exists(self.cut_path.get()):
-            os.makedirs(self.cut_path.get())
-
-        vol = simpledialog.askfloat("볼륨 설정기", "설정할 볼륨을 입력하세요.\n추천값 : 93.0±", parent=root)
-        if not vol:
-            self.log("볼륨 조절 작업 취소")
-            return
-        vol -= 89.0
-
-        def volume():    
-            # 엑셀 파일 열기
-            try:
-                df = pd.read_excel(self.excel_path.get())
-            except Exception as e:
-                messagebox.showerror("에러", f"엑셀 파일을 불러오는 중 오류가 발생했습니다. : ({e})")
-                return
-
-            musicNum = len(df)
-            success = 0
-            fail = 0
-            skip = 0
-            unused = 0
-            for idx, row in df.iterrows():
-                if pd.notna(row['미사용']):
-                    self.log(f'볼륨 조절 스킵 : {idx+1:03}행 (미사용)')
-                    skip += 1
-                    unused += 1
-                    continue
-
-                filename = f'{idx+1-unused:03}.mp3'
-                if not os.path.exists(os.path.join(self.cut_path.get(), filename)):
-                    self.log(f'볼륨 조절 스킵 : {idx+1:03}행 ({filename} 파일 없음)')
-                    skip += 1
-                    continue
-
-                command = ['mp3gain', '-c', '-r', '-d', str(vol), os.path.join(self.cut_path.get(), filename)]
-                try:
-                    subprocess.run(command, creationflags=subprocess.CREATE_NO_WINDOW, check=True)
-                    self.log(f'볼륨 조절 성공 : {idx+1:03}행 ({filename})')
-                    success += 1
-
-                except subprocess.CalledProcessError as e:
-                    self.log(f'볼륨 조절 실패 : {idx+1:03}행 ({e})')
-                    fail +=1
-                    continue
-
-            self.log(f'총 {musicNum}개 중 {success}개 성공, {fail}개 실패, {skip}개 (미사용 {unused}개)를 건너뛰었습니다.')
-        
-        thread = threading.Thread(target=volume)
         thread.start()
 
     def extract_info(self):
@@ -406,11 +388,17 @@ class App:
             success = 0
             fail = 0
             unused = 0
+            opend = 0
             for idx, row in df.iterrows():
                 try:
                     if pd.notna(row['미사용']):
                         self.log(f'추출 스킵 : {idx+1:03}행 (미사용)')
                         unused += 1
+                        continue
+                    
+                    if pd.notna(row['오프닝/엔딩']):
+                        self.log(f'추출 스킵 : {idx+1:03}행 (오프닝/엔딩)')
+                        opend += 1
                         continue
                     
                     empty = []
@@ -452,7 +440,7 @@ class App:
 
                     if pd.notna(row['정답 리스트2']):
                         answers += row['정답 리스트2'].split(',')
-                        count += len(answers) << 0x8
+                    count += len(answers) << 0x8
                         
                     answer_db_format = ', '.join([f'Db("{answer.strip()}")' for answer in answers])
                     answer_list += f'[{answer_db_format}], '
@@ -464,16 +452,16 @@ class App:
                     answer_count += f'{count}, '
                     music_length += f'{int(row["End"] - row["Start"])}, '
 
-                    self.log(f'추출 성공 : {idx+1:03} - {row["제목"]} ({idx+1-unused:03}.mp3)')
+                    self.log(f'추출 성공 : {idx+1:03}행')
                     success += 1
 
                 except Exception as e:
-                    self.log(f'추출 실패 : {idx+1:03} - {row["제목"]} ({e})')
+                    self.log(f'추출 실패 : {idx+1:03}행 ({e})')
                     fail += 1
                     return
-            
-            with open('info.txt', 'w', encoding='utf-8') as outfile:
-                outfile.write(f'const musicNumMax = {musicNum-unused};\n')
+
+            with open(f'{os.path.dirname(self.excel_path.get())}/src/musicInfo.eps', 'w', encoding='utf-8') as outfile:
+                outfile.write(f'const musicNumMax = {musicNum-unused-opend};\n')
                 outfile.write(f'const categoryNum = {categoryNum};\n')
 
                 outfile.write('const categoryActive = EUDArray(categoryNum);\n') 
@@ -500,7 +488,7 @@ class App:
                 outfile.write(f'{hint[:-2]}];\n')
                 outfile.write(f'{chosung[:-2]}];\n')
 
-            self.log(f'총 {musicNum}개 중 {success}개 성공, {fail}개 실패, {unused}개를 미사용 했습니다.')
+            self.log(f'총 {musicNum}개 중 {success}개 성공, {fail}개 실패, 미사용 {unused}개, 오프닝/엔딩 {opend}개를 스킵했습니다.')
         
         thread = threading.Thread(target=extract)
         thread.start()

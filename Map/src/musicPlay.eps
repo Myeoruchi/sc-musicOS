@@ -1,0 +1,143 @@
+import BGM;
+import functions as fc;
+import musicInfo as info;
+
+import build.hintTime;
+import build.scoreMax;
+import build.scoreDiff;
+
+const orderArr = EUDArray(info.musicNumMax);
+const vote = PVariable();
+const correct = PVariable();
+var musicNum;
+var chatSeparate;
+var hint1;
+var hint2;
+var autoSkip;
+var curMusic = -1;
+var index;
+var musicTimer;
+var skipRequireNum;
+var txtUpdate;
+var score;
+
+function orderInit() {
+    if (!musicNum) { return; }
+    var pos;
+    foreach (i : py_range(info.musicNumMax)) {
+        if (!info.categoryActive[info.categoryIndex[i]]) { orderArr[pos] = i; pos++; }
+    }
+    foreach (j : py_range(8)) {
+        for (var i = 0; i < musicNum-1; i++) {
+            const ranNum = dwrand() % (musicNum-i) + i;
+            const temp = orderArr[i];
+            orderArr[i] = orderArr[ranNum];
+            orderArr[ranNum] = temp;
+        }
+    }
+    skipRequireNum = bread_epd(EPD(0x57F1E1), 1)/2 + 1;
+}
+
+function musicInit() {
+    if (curMusic+1 == musicNum) { return 4; }
+    foreach (cp : EUDLoopPlayer("Human")) { vote[cp] = false; correct[cp] = false; }
+    skipRequireNum = bread_epd(EPD(0x57F1E1), 1)/2 + 1;
+    musicTimer = 0;
+    score = scoreMax;
+    curMusic++;
+    index = orderArr[curMusic];
+    BGM.SetBGM(index);
+    printAt(3, "\n\n\n ");
+    return 1;
+}
+
+function musicDelay() {
+    var timer;
+    timer++;
+    if (timer == 35*2) { timer = 0; return true; }
+    return false;
+}
+
+function musicText(p, flag) {
+    const s = StringBuffer(1024);
+    var ans;
+    if (flag) {
+        if (!(musicTimer % 35) || txtUpdate) {
+            txtUpdate = false;
+            ans = false;
+            const remain = info.lenArr[index] - musicTimer/35;
+            s.insert(0);
+            s.appendf("\x13\x1E남은곡 ( {} / {} )\n", musicNum - curMusic, musicNum);
+            s.appendf("\x13\x19음악\x04을 듣고 \x11답\x04을 입력하세요.\n");
+            s.appendf("\x13\x1F- \x1D{}초 \x1F-\n", remain);
+            var first = true;
+            foreach (cp : EUDLoopPlayer("Human")) {
+                if (correct[cp]) {
+                    if (first) { first = false; s.appendf("\x13\x04정답자 : "); }
+                    s.appendf("{:c}P{} ", cp, cp+1);
+                }
+            }
+            if (hint1 && remain <= hintTime[0]) {
+                if (score > scoreMax - scoreDiff) { score = score - scoreDiff ? score - scoreDiff : 1; }
+                s.appendf("\n\x13\x07일반힌트 \x04: {:t}", info.hintArr1[index]);
+            }
+            if (hint2 && remain <= hintTime[1]) {
+                if (score > scoreMax - scoreDiff * (2 - !hint1)) { score = score - scoreDiff ? score - scoreDiff : 1; }
+                s.appendf("\n\x13\x07초성힌트 \x04: {:t}", info.hintArr2[index]);
+            }
+        }
+        musicTimer++;
+    }
+    if (!ans && (!flag || correct[p])) {
+        ans = true;
+        s.appendf("\n\x13\x1F정답 \x04: {:t}", info.artArr[index]);
+    }
+    s.DisplayAt(0);
+}
+
+function musicSkip(superUser, p) {
+    const s = StringBuffer(1024);
+    var flag = false;
+    var skip = 0;
+    var notCorrect = 0;
+    var count = 0;
+    s.insert(0);
+    s.appendf("\x1D( \x19\"K\"\x04키를 누르면, 곡을 넘깁니다. ");
+    foreach (cp : EUDLoopPlayer("Human")) {
+        if (cp == superUser && fc.getDeath(cp, "Protoss Zealot")) {
+            skip = 2;
+            break;
+        }
+        if (!vote[cp] && fc.getDeath(cp, "Protoss Probe")) { 
+            vote[cp] = true;
+            if (p == cp) { simpleprint("\x08！\x04스킵에 투표하셨습니다."); PlayWAV("click"); }
+        }
+        if (!correct[cp]) {
+            notCorrect++;
+            if (vote[cp]) {
+                if (!flag) { flag = true; s.appendf("\x1E투표인원 : "); }
+                s.appendf("{:c}P{} ", cp, cp+1);
+                count++;
+            }
+        }
+    }
+    if (!notCorrect) {
+        if (autoSkip) { simpleprint("\x1F■ \x04현재 곡이 자동으로 스킵됩니다."); PlayWAV("skip"); return true; }
+        notCorrect = skipRequireNum;
+        foreach (cp : EUDLoopPlayer("Human")) {
+            if (vote[cp]) {
+                if (!flag) { flag = true; s.appendf("\x1E투표인원 : "); }
+                s.appendf("{:c}P{} ", cp, cp+1);
+                count++;
+            }
+        }
+    }
+    if (count) { s.appendf("\x1E{}/{} ", count, notCorrect); }
+    if (!skip && count >= notCorrect) { skip = 1; }
+    if (skip == 1) { simpleprint("\x1F■ \x04스킵투표로 현재 곡을 스킵합니다."); PlayWAV("skip"); }
+    else if (skip == 2) { println("\x1F■ {0:c}{0:n}\x04님이 강제로 현재 곡을 스킵했습니다.", superUser); PlayWAV("skip"); }
+    else if (info.lenArr[index] == musicTimer/35) { skip = 1; }
+    s.appendf("\x1D)");
+    eprintf("{:t}", s.epd);
+    return skip;
+}
