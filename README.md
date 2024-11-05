@@ -38,4 +38,7 @@ Thanks to Avlos (갈대)
 - Map 폴더 내에 build.eds 파일을 메모장으로 수정하여 주석을 바탕으로 수정하시면 됩니다.
 
 ### 오프닝 및 엔딩 수정
-- Map/src 폴더 내 opening.eps 및 main.eps 내에 있는 오프닝 수정
+- Map/src 폴더 내 opening.eps 및 main.eps 내에 있는 오프닝이나 엔딩 멘트 수정하시면 됩니다.
+
+### 빌드 방법
+- Map 폴더 내 build.eds 파일을 euddraft에 끌어다 놓거나 euddraft를 연결하여 실행하면 됩니다.
