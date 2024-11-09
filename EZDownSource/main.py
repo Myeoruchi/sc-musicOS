@@ -1,3 +1,4 @@
+import time
 import os
 import json
 import subprocess
@@ -6,9 +7,10 @@ import threading
 from tkinter import simpledialog, filedialog, messagebox
 import pandas as pd
 from yt_dlp import YoutubeDL
+from urllib.parse import urlparse, parse_qs
 
 SEGMENT_DURATION = 2.28
-VERSION = 'v2.1'
+VERSION = 'v2.2'
 settings_file = 'settings.json'
 
 class App:
@@ -114,7 +116,21 @@ class App:
                         self.cut_path.xview(tk.END)
                     except:
                         pass
-        
+    
+    def extract_video_id(self, url):
+            if 'youtu.be' in url:
+                parsed_url = urlparse(url)
+                video_id = parsed_url.path.strip('/')
+                return video_id if len(video_id) == 11 else None
+            
+            elif 'youtube.com' in url:
+                parsed_url = urlparse(url)
+                query_params = parse_qs(parsed_url.query)
+                video_id = query_params.get('v', [None])[0]
+                return video_id if len(video_id) == 11 else None
+            
+            return None
+
     def browse_path(self, folder, path):
         if folder:
             selectpath = filedialog.askdirectory()
@@ -145,6 +161,11 @@ class App:
             return
         os.makedirs(self.download_path.get(), exist_ok=True)
 
+        sleep = simpledialog.askfloat("간격 설정기", "차단을 막기 위한 다운로드 간격 설정입니다.\n초 단위이므로 적당히 경험에 따라 조절해주세요.", parent=root)
+        if not sleep:
+            self.log("다운로드 작업 취소")
+            return
+        
         def download():
             ydl_opts = {
                 'format': 'bestaudio/best',
@@ -183,8 +204,7 @@ class App:
                         continue
                     
                     try:
-                        info_dict = ydl.extract_info(video_url, download=False)
-                        video_id = info_dict.get("id", None)
+                        video_id = self.extract_video_id(video_url)
                         downloaded_file = os.path.join(self.download_path.get(), f'{video_id}.mp3')
 
                         if os.path.exists(downloaded_file):
@@ -195,6 +215,8 @@ class App:
                         ydl.extract_info(video_url, download=True)
                         self.log(f'다운로드 성공 : {idx+1:03}행')
                         success += 1
+
+                        time.sleep(sleep)
 
                     except Exception as e:
                         self.log(f'다운로드 실패 : {idx+1:03}행 ({e})')
@@ -232,16 +254,6 @@ class App:
             return
 
         def cut():
-            ydl_opts = {
-                'format': 'bestaudio/best',
-                'outtmpl': os.path.join(self.download_path.get(), '%(id)s.%(ext)s'),
-                'postprocessors': [{
-                    'key': 'FFmpegExtractAudio',
-                    'preferredcodec': 'mp3',
-                    'preferredquality': '320',
-                }],
-            }
-            
             # 엑셀 파일 열기
             try:
                 df = pd.read_excel(self.excel_path.get())
@@ -257,82 +269,80 @@ class App:
             unused = 0
             op = 0
             end = 0
-            with YoutubeDL(ydl_opts) as ydl:
-                for idx, row in df.iterrows():
-                    if pd.notna(row['미사용']):
-                        self.log(f'볼륨 조절 / 자르기 스킵 : {idx+1:03}행 (미사용)')
-                        unused += 1
-                        continue
+            for idx, row in df.iterrows():
+                if pd.notna(row['미사용']):
+                    self.log(f'볼륨 조절 / 자르기 스킵 : {idx+1:03}행 (미사용)')
+                    unused += 1
+                    continue
 
-                    empty = []
-                    if pd.isna(row['Addr']):
-                        empty.append('Addr')
-                    if pd.isna(row['Start']):
-                        empty.append('Start')
-                    if pd.isna(row['End']):
-                        empty.append('End')
+                empty = []
+                if pd.isna(row['Addr']):
+                    empty.append('Addr')
+                if pd.isna(row['Start']):
+                    empty.append('Start')
+                if pd.isna(row['End']):
+                    empty.append('End')
 
-                    if empty:
-                        empty_list = ', '.join(empty)
-                        self.log(f'볼륨 조절 / 자르기 실패 : {idx+1:03}행 (공백 : {empty_list})')
-                        fail += 1
-                        continue
+                if empty:
+                    empty_list = ', '.join(empty)
+                    self.log(f'볼륨 조절 / 자르기 실패 : {idx+1:03}행 (공백 : {empty_list})')
+                    fail += 1
+                    continue
 
-                    try:
-                        info_dict = ydl.extract_info(row['Addr'], download=False)
-                        video_id = info_dict.get("id", None)
-                        downloaded_file = os.path.join(self.download_path.get(), f'{video_id}.mp3')
+                try:
+                    video_id = self.extract_video_id(row['Addr'])
+                    downloaded_file = os.path.join(self.download_path.get(), f'{video_id}.mp3')
 
-                        if os.path.exists(downloaded_file):
-                            if pd.notna(row['오프닝/엔딩']):
-                                if row['오프닝/엔딩'] == '오프닝':
-                                    path = self.cut_path.get() + '/OP'
-                                    op += 1
-                                else:
-                                    path = self.cut_path.get() + '/ED'
-                                    end += 1
+                    if os.path.exists(downloaded_file):
+                        if pd.notna(row['오프닝/엔딩']):
+                            if row['오프닝/엔딩'] == '오프닝':
+                                path = self.cut_path.get() + '/OP'
+                                op += 1
                             else:
-                                path = self.cut_path.get() + f'/{idx+1-unused-op-end:03}'
-                            os.makedirs(path, exist_ok=True)
-                            output_file = path + '/cut.mp3'
-
-                            command = [
-                                'ffmpeg',
-                                '-ss', str(row['Start']),
-                                '-to', str(row['End']),
-                                '-i', downloaded_file,
-                                '-reset_timestamps', '1',
-                                '-c', 'copy', output_file
-                            ]
-                            subprocess.run(command, creationflags=subprocess.CREATE_NO_WINDOW, check=True)
-
-                            command = ['mp3gain', '-c', '-r', '-d', str(vol), output_file]
-                            subprocess.run(command, creationflags=subprocess.CREATE_NO_WINDOW, check=True)
-                            
-                            command = [
-                                'ffmpeg',
-                                '-i', output_file,
-                                '-f', 'segment',
-                                '-segment_time', str(SEGMENT_DURATION),
-                                '-reset_timestamps', '1',
-                                '-c:a', 'libvorbis',
-                                '-q:a', str(quality),
-                                path + '/%03d.ogg'
-                            ]
-                            subprocess.run(command, creationflags=subprocess.CREATE_NO_WINDOW, check=True)
-
-                            self.log(f'볼륨 조절 / 자르기 성공 : {idx+1:03}행')
-                            success += 1
+                                path = self.cut_path.get() + '/ED'
+                                end += 1
                         else:
-                            self.log(f'볼륨 조절 / 자르기 실패 : {idx+1:03}행 (파일 없음)')
-                            fail += 1
-                            continue
+                            path = self.cut_path.get() + f'/{idx+1-unused-op-end:03}'
+                        os.makedirs(path, exist_ok=True)
+                        output_file = path + '/cut.mp3'
 
-                    except Exception as e:
-                        self.log(f'볼륨 조절 / 자르기 실패 : {idx+1:03}행 ({e})')
+                        command = [
+                            'ffmpeg',
+                            '-ss', str(row['Start']),
+                            '-to', str(row['End']),
+                            '-i', downloaded_file,
+                            '-reset_timestamps', '1',
+                            '-c', 'copy', output_file
+                        ]
+                        subprocess.run(command, creationflags=subprocess.CREATE_NO_WINDOW, check=True)
+
+                        command = ['mp3gain', '-c', '-r', '-d', str(vol), output_file]
+                        subprocess.run(command, creationflags=subprocess.CREATE_NO_WINDOW, check=True)
+                        
+                        command = [
+                            'ffmpeg',
+                            '-i', output_file,
+                            '-f', 'segment',
+                            '-segment_time', str(SEGMENT_DURATION),
+                            '-reset_timestamps', '1',
+                            '-c:a', 'libvorbis',
+                            '-q:a', str(quality),
+                            path + '/%03d.ogg'
+                        ]
+                        subprocess.run(command, creationflags=subprocess.CREATE_NO_WINDOW, check=True)
+
+                        self.log(f'볼륨 조절 / 자르기 성공 : {idx+1:03}행')
+                        success += 1
+                    else:
+                        self.log(f'볼륨 조절 / 자르기 실패 : {idx+1:03}행 (파일 없음)')
                         fail += 1
+                        continue
 
-                subprocess.run(f'del /s /f /q "{self.cut_path.get()}\\*.mp3"', shell=True, creationflags=subprocess.CREATE_NO_WINDOW, check=True)
+                except Exception as e:
+                    self.log(f'볼륨 조절 / 자르기 실패 : {idx+1:03}행 ({e})')
+                    fail += 1
+
+            subprocess.run(f'del /s /f /q "{self.cut_path.get()}\\*.mp3"', shell=True, creationflags=subprocess.CREATE_NO_WINDOW, check=True)
 
             with open(f'{self.cut_path.get()}/info.txt', 'w', encoding='utf-8') as f:
                 if fail:
