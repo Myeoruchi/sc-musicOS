@@ -175,6 +175,13 @@ class App:
                     'preferredcodec': 'mp3',
                     'preferredquality': '320',
                 }],
+                'postprocessor_args': [
+                    '-b:a', '320k',
+                    '-ar', '44100',
+                    '-ac', '2',
+                ],
+                'audio-quality': 0,
+                'extractaudio': True,
             }
             
             # 엑셀 파일 열기
@@ -205,7 +212,10 @@ class App:
                     
                     try:
                         video_id = self.extract_video_id(video_url)
-                        downloaded_file = os.path.join(self.download_path.get(), f'{video_id}.mp3')
+                        if video_id:
+                            downloaded_file = os.path.join(self.download_path.get(), f'{video_id}.mp3')
+                        else:
+                            downloaded_file = video_url
 
                         if os.path.exists(downloaded_file):
                             self.log(f'다운로드 스킵 : {idx+1:03}행 (파일 존재함)')
@@ -248,7 +258,7 @@ class App:
             return
         vol -= 89.0
 
-        quality = simpledialog.askfloat("음질 설정기", "설정할 음질을 입력하세요.\n범위는 1~10 사이며, 클수록 용량이 커집니다.", parent=root)
+        quality = simpledialog.askfloat("음질 설정기", "설정할 음질을 입력하세요. (1~10, 추천 값 : 4)\n클수록 음질이 높아집니다.", parent=root)
         if not quality:
             self.log("볼륨 조절 / 자르기 작업 취소")
             return
@@ -291,7 +301,10 @@ class App:
 
                 try:
                     video_id = self.extract_video_id(row['Addr'])
-                    downloaded_file = os.path.join(self.download_path.get(), f'{video_id}.mp3')
+                        if video_id:
+                            downloaded_file = os.path.join(self.download_path.get(), f'{video_id}.mp3')
+                        else:
+                            downloaded_file = video_url
 
                     if os.path.exists(downloaded_file):
                         if pd.notna(row['오프닝/엔딩']):
@@ -312,7 +325,12 @@ class App:
                             '-to', str(row['End']),
                             '-i', downloaded_file,
                             '-reset_timestamps', '1',
-                            '-c', 'copy', output_file
+                            '-c:a', 'libmp3lame',
+                            '-q:a', '0',
+                            '-ar', '44100',
+                            '-ac', '2',
+                            '-b:a', '320k',
+                            output_file
                         ]
                         subprocess.run(command, creationflags=subprocess.CREATE_NO_WINDOW, check=True)
 
