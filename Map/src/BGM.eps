@@ -1,6 +1,9 @@
+import musicPlay as mp;
+
 import build.segCount;
 
 const s = StringBuffer(1024);
+var oneSec;
 var lastTime;
 var bgmIndex;
 var segIndex;
@@ -19,7 +22,8 @@ function Play() {
 		lastTime = dwread_epd(EPD(0x51CE8C));
 		dbstr_print(GetMapStringAddr(s.StringIndex), bgmIndex, "-", segIndex);
 		s.Play();
-		segIndex++;
+        if (oneSec && !mp.correct[getcurpl()]) { return; }
+        segIndex++;
 		if (segIndex > segCount[bgmIndex]) { segIndex = 0; }
 	}
 }
