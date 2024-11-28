@@ -11,7 +11,7 @@ from yt_dlp import YoutubeDL
 from urllib.parse import urlparse, parse_qs
 
 SEGMENT_DURATION = 2.28
-VERSION = 'v2.3'
+VERSION = 'v2.4'
 settings_file = 'settings.json'
 
 icon_base64 = "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"
@@ -452,34 +452,35 @@ class App:
                     if empty:
                         empty_list = ', '.join(empty)
                         self.log(f'추출 실패 : {idx+1:03}행 (공백 : {empty_list})')
+                        continue
                         
                     if row['범주'] in categoryName:
                         index = categoryName.index(row['범주'])
                         categoryIndex.append(index)
                         categoryInclude[index] += 1
                     else:
-                        categoryName.append(row['범주'])
+                        categoryName.append(row['범주'].strip().replace('"', '\\"').replace("'", "\\'"))
                         categoryIndex.append(categoryNum)
                         categoryInclude.append(1)
                         categoryNum += 1
 
-                    hint += f'EPD(Db("{row["힌트1"]}")), '
-                    artist += f'EPD(Db("{row["가수"]} - {row["제목"]}")), '
+                    hint += 'EPD(Db("' + row["힌트1"].strip().replace('"', '\\"').replace("'", "\\'") + '")), '
+                    artist += 'EPD(Db("' + row["가수"].strip().replace('"', '\\"').replace("'", "\\'") + ' - ' + row["제목"].strip().replace('"', '\\"').replace("'", "\\'") + '")), '
 
                     count = 0
-                    answers = row['정답 리스트1'].split(',')  # ,로 구분된 정답 분리
+                    answers = row['정답 리스트1'].replace('"', '\\"').replace("'", "\\'").split(',')
                     count += len(answers)
 
                     if pd.notna(row['정답 리스트2']):
-                        answers += row['정답 리스트2'].split(',')
+                        answers += row['정답 리스트2'].replace('"', '\\"').replace("'", "\\'").split(',')
                     count += len(answers) << 0x8
-                        
+
                     answer_db_format = ', '.join([f'Db("{answer.strip()}")' for answer in answers])
                     answer_list += f'[{answer_db_format}], '
 
                     first_answer = answers[0].strip()
                     cho = extract_chosung(first_answer)
-                    chosung += f'EPD(Db("{cho}")), '
+                    chosung += 'EPD(Db("' + cho.strip().replace('"', '\\"').replace("'", "\\'") + '")), '
 
                     answer_count += f'{count}, '
                     music_length += f'{int(row["End"] - row["Start"])}, '
@@ -490,7 +491,7 @@ class App:
                 except Exception as e:
                     self.log(f'추출 실패 : {idx+1:03}행 ({e})')
                     fail += 1
-                    return
+                    continue
 
             with open(f'{os.path.dirname(self.excel_path.get())}/src/musicInfo.eps', 'w', encoding='utf-8') as outfile:
                 outfile.write(f'const musicNumMax = {musicNum-unused-opend};\n')
@@ -526,8 +527,7 @@ class App:
         thread.start()
     
     def log(self, message):
-        """로그 메시지를 출력하는 함수"""
-        self.log_text.insert(tk.END, message + "\n")
+        """로그 메시지를 출력하는 함수""" 
         self.log_text.config(state="normal")  # Text 위젯을 수정 가능 상태로 변경
         self.log_text.insert(tk.END, message + "\n")  # 메시지 삽입
         self.log_text.yview(tk.END)  # 자동으로 최신 로그로 스크롤
