@@ -19,11 +19,12 @@ def set_property():
 	chkt.setsection("FORC", FORC)
 
 def build():
-	global maker, leaderboard, hint1, ansAllow, hintTime, scoreMax, scoreDiff, segCount
+	global maker, leaderboard, hint1, ansAllow, forceTwoSec, hintTime, scoreMax, scoreDiff, segCount
 	maker = EPD(Db(settings['maker']))
 	leaderboard = settings['leaderboard']
 	hint1 = EPD(Db(settings['hint1_name']))
 	ansAllow = EPD(Db(settings['answer_allow']))
+	forceTwoSec = True if settings['two_second'] == 'True' else False
 	hintTime = EUDArray([int(settings['hint1_open']), int(settings['hint2_open'])])
 	scoreMax = int(settings['score_max'])
 	scoreDiff = int(settings['score_diff'])

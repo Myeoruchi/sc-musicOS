@@ -8,8 +8,9 @@ import build.maker;
 import build.leaderboard;
 import build.hint1;
 import build.ansAllow;
+import build.forceTwoSec;
 
-const feature = [0, 1, 0, 0, 1]; // 0 is on, 1 is off
+const feature = [0, 1, 0, 0, 1];    // 0 is on, 1 is off
 const category = EUDArray(info.categoryNum);
 var click;
 var timer;
@@ -43,14 +44,20 @@ function opening(superUser) {
         s.appendf("\x13\x19┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛");
     }
     if (timer == 12*48) {
-        once { status = 1; txtUpdate = true; }
+        once {
+            if (forceTwoSec) { feature[4] = 0; }
+            status = 1;
+            txtUpdate = true;
+        }
         CenterView("Anywhere");
         const clicked = fc.getDeath(superUser, "Terran Marine");
         if (clicked) {
             if (clicked == 100) { PlayWAV("skip"); click = 0; timer++; return false; }
             PlayWAV("click");
-            feature[clicked-1] = !feature[clicked-1];
-            txtUpdate = true;
+            if (clicked != 5 || !forceTwoSec) {
+                feature[clicked-1] = !feature[clicked-1];
+                txtUpdate = true;
+            }
         }
         if (txtUpdate) {
             txtUpdate = false;
@@ -126,7 +133,7 @@ function opening(superUser) {
         eprintf(" ");
     }
     once (timer == 12*68) {
-        BGM.oneSec = !feature[4];
+        BGM.twoSec = !feature[4];
         LeaderBoardScore(Custom, "\x1E"+leaderboard);
         LeaderBoardComputerPlayers(Disable);
         println("\n\n\n\n\n\n\n\n\n\n ");

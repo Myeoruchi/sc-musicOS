@@ -2,3 +2,5 @@ EZDownSource/build
 EZDownSource/dist
 EZDownSource/include
 EZDownSource/*.spec
+Map/src/__epspy__
+Map/src/__pycache__
