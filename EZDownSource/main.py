@@ -275,11 +275,14 @@ class App:
                 messagebox.showerror("에러", f"엑셀 파일을 불러오는 중 오류가 발생했습니다. ({e})")
                 return
 
-            subprocess.run(f'del /s /f /q "{self.cut_path.get()}"', shell=True, creationflags=subprocess.CREATE_NO_WINDOW, check=True)
+            response = messagebox.askyesno("초기화 여부", "남아있는 파일을 삭제하고 작업 하시겠습니까?\n삭제하지 않을 경우 파일이 존재하는 행은 스킵 합니다.\n계산 방식 : 행 번호 - 이전 행까지 등장한 미사용 + 오프닝/엔딩 곡 수")
+            if response:
+                subprocess.run(f'del /s /f /q "{self.cut_path.get()}"', shell=True, creationflags=subprocess.CREATE_NO_WINDOW, check=True)
 
             musicNum = len(df)
             success = 0
             fail = 0
+            skip = 0
             unused = 0
             op = 0
             end = 0
@@ -287,7 +290,23 @@ class App:
                 if pd.notna(row['미사용']):
                     self.log(f'볼륨 조절 / 자르기 스킵 : {idx+1:03}행 (미사용)')
                     unused += 1
+                    skip += 1
                     continue
+
+                if not response:
+                    if pd.notna(row['오프닝/엔딩']):
+                        if row['오프닝/엔딩'] == '오프닝':
+                            path = self.cut_path.get() + f'/OP'
+                            op += 1
+                        else:
+                            path = self.cut_path.get() + f'/ED'
+                            end += 1
+                    else:
+                        path = self.cut_path.get() + f'/{idx+1-unused-op-end:03}'
+                    if os.path.exists(path):
+                        self.log(f'볼륨 조절 / 자르기 스킵 : {idx+1:03}행 (파일 존재)')
+                        skip += 1
+                        continue
 
                 empty = []
                 if pd.isna(row['Addr']):
@@ -371,7 +390,7 @@ class App:
                     f.write('fail')
                 else:
                     f.write(f'{musicNum-unused-op-end}\n{op}\n{end}')
-            self.log(f'총 {musicNum}개 중 {success}개 성공, {fail}개 실패, {unused}개 미사용 했습니다.')
+            self.log(f'총 {musicNum}개 중 {success}개 성공, {fail}개 실패, {skip}개 (미사용 {unused}개)를 건너뛰었습니다.')
             self.log(f'{op+end}개의 곡이 오프닝/엔딩 곡으로 사용됐습니다.')
         
         thread = threading.Thread(target=cut)
