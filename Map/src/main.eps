@@ -18,6 +18,10 @@ function onPluginStart() {
     cf.variableInit();
     SetMemoryEPD(EPD(0x657A9C), SetTo, 0); // 화면밝기
     SetMemoryEPD(EPD(0x5124F0), SetTo, 29);	// x2배속
+    foreach (cp : EUDLoopPlayer("Human")) {
+        setcurpl(cp);
+        fc.playerInit();
+    }
     setcurpl(cp);
     BGM.SetBGM(info.musicNumMax);
 }
