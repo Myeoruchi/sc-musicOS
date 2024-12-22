@@ -29,8 +29,8 @@ def build():
 	scoreMax = int(settings['score_max'])
 	scoreDiff = int(settings['score_diff'])
 
-	trimpath = './trim'
-	with open(f'{trimpath}/info.txt', 'r', encoding='utf-8') as f:
+	trimpath = settings['trimpath']
+	with open(f'{os.path.join(trimpath, "info.txt")}', 'r', encoding='utf-8') as f:
 		musicNum = f.readline()
 		assert musicNum != 'fail', "EZDown을 이용해 실패없이 음원을 잘라주세요."
 		musicNum = int(musicNum)
