@@ -42,19 +42,19 @@ def build():
 	segment_count = []
 	for idx in range(musicNum):
 		file_path = trimpath + f'/{idx+1:03}'
-		segment_count.append(len(os.listdir(file_path))-1)
+		segment_count.append(len(os.listdir(file_path)))
 		for seg_idx in range(segment_count[-1]):
 			MPQAddFile(f'{idx}-{seg_idx}', pathlib.Path(f'{file_path}/{seg_idx:03}.ogg').read_bytes())
 	
 	if op:
 		file_path = trimpath + '/OP'
-		segment_count.append(len(os.listdir(file_path))-1)
+		segment_count.append(len(os.listdir(file_path)))
 		for seg_idx in range(segment_count[-1]):
 			MPQAddFile(f'{musicNum}-{seg_idx}', pathlib.Path(f'{file_path}/{seg_idx:03}.ogg').read_bytes())
 	
 	if end:
 		file_path = trimpath + '/ED'
-		segment_count.append(len(os.listdir(file_path))-1)
+		segment_count.append(len(os.listdir(file_path)))
 		for seg_idx in range(segment_count[-1]):
 			MPQAddFile(f'{musicNum+1}-{seg_idx}', pathlib.Path(f'{file_path}/{seg_idx:03}.ogg').read_bytes())
 	segCount = EUDArray(segment_count)

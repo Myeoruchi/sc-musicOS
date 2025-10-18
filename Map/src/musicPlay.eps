@@ -141,3 +141,25 @@ function musicSkip(superUser, p) {
     eprintf("{:t}", s.epd);
     return skip;
 }
+
+function changeVolume(p: TrgPlayer) {
+    const death = fc.getDeath(p, "Zerg Zergling");
+    if (death == 1) {
+        if (BGM.volume < 10) {
+            BGM.volume++;
+            println("\x1F■ \x04음량이 \x07{}\x04로 설정되었습니다.", BGM.volume);
+        }
+        else {
+            println("\x1F■ \x04음량이 이미 최대입니다.", BGM.volume);
+        }
+    }
+    else if (death == 2 && BGM.volume > 0) {
+        if (BGM.volume > 1) {
+            BGM.volume--;
+            println("\x1F■ \x04음량이 \x07{}\x04로 설정되었습니다.", BGM.volume);
+        }
+        else {
+            println("\x1F■ \x04음량이 이미 최소입니다.", BGM.volume);
+        }
+    }
+}

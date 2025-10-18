@@ -92,6 +92,8 @@ QCDebug: false
 k; NotTyping: Protoss Probe, 1
 p; NotTyping: Protoss Zealot, 1
 Insert; NotTyping: Protoss Dragoon, 1
+PgUp; NotTyping: Zerg Zergling, 1
+PgDn; NotTyping: Zerg Zergling, 2
 click; val, click: Terran Marine
 strShare; pos; val, pos: Zerg Drone
 strShare; str1; val, str1: Terran Ghost

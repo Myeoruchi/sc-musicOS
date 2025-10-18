@@ -42,6 +42,7 @@ function beforeTriggerExec() {
 }
 
 function afterTriggerExec() {
+    mp.changeVolume(cp);
     switch (status) {
         case 0:
             BGM.Play();

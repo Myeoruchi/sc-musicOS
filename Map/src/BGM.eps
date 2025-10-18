@@ -7,6 +7,7 @@ var twoSec;
 var lastTime;
 var bgmIndex;
 var segIndex;
+var volume = 5;
 
 function SetBGM (bIndex) {
 	bgmIndex = bIndex;
@@ -21,7 +22,7 @@ function Play() {
 	if (frameTick >= 2220) {
 		lastTime = dwread_epd(EPD(0x51CE8C));
 		dbstr_print(GetMapStringAddr(s.StringIndex), bgmIndex, "-", segIndex);
-		s.Play();
+        for (var i = 0; i < volume; i++) { s.Play(); }
         if (twoSec && !mp.correct[getcurpl()]) { return; }
         segIndex++;
 		if (segIndex > segCount[bgmIndex]) { segIndex = 0; }
