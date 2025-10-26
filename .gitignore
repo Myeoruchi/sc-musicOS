@@ -1,7 +1,6 @@
 EZDownSource/build
 EZDownSource/dist
 EZDownSource/include
-EZDownSource/*.spec
 EZDownSource/Lib
 EZDownSource/share
 EZDownSource/Scripts
@@ -9,3 +8,4 @@ EZDownSource/pyvenv.cfg
 Map/src/__epspy__
 Map/src/__pycache__
 *.lnk
+todo.txt
